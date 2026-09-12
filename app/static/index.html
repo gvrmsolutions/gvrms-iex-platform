@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GVRM IEX — Institutional Excellence Platform</title>
+<style>
+  :root{
+    --navy:#07152d; --navy2:#0e2347; --gold:#c9a24b; --bg:#f3f5f9;
+    --ok:#1f9d55; --warn:#d99a1b; --bad:#c0392b; --mid:#2d6bc4;
+  }
+  *{box-sizing:border-box}
+  body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:var(--bg);color:#172033}
+  header{background:var(--navy);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+  header h1{font-size:20px;margin:0;letter-spacing:.5px}
+  header .tag{font-size:12px;opacity:.7}
+  nav{display:flex;gap:4px;background:var(--navy2);padding:0 24px}
+  nav button{background:none;border:none;color:#cdd7ea;padding:12px 16px;cursor:pointer;font-size:14px;border-bottom:3px solid transparent}
+  nav button.active{color:#fff;border-bottom-color:var(--gold)}
+  main{max-width:1100px;margin:24px auto;padding:0 24px 60px}
+  .card{background:#fff;border-radius:12px;padding:22px;margin-bottom:18px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+  .stat{background:#fff;border-radius:12px;padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .stat .num{font-size:32px;font-weight:700;color:var(--navy)}
+  .stat .label{font-size:12px;color:#667;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+  input,select,textarea{width:100%;padding:9px 10px;border:1px solid #dde2ea;border-radius:8px;margin:6px 0 12px;font-size:14px}
+  label{font-size:12px;color:#556;font-weight:600}
+  button.btn{background:var(--navy);color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px}
+  button.btn:hover{opacity:.9}
+  button.btn.secondary{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid #eef0f4}
+  th{color:#667;font-size:12px;text-transform:uppercase}
+  .pill{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;display:inline-block}
+  .pill.Critical{background:var(--bad)} .pill.Needs.Improvement,.pill.Needs{background:var(--warn)}
+  .pill.Good{background:var(--mid)} .pill.Excellent{background:var(--ok)}
+  .domain-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .domain-tile{background:#fff;border-radius:10px;padding:14px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:5px solid var(--gold)}
+  .domain-tile:hover{background:#f8f6ee}
+  .domain-tile .code{font-weight:800;color:var(--navy);font-size:20px}
+  .domain-tile .name{font-size:12px;color:#556;margin-top:2px}
+  .hidden{display:none}
+  #authBox{max-width:420px;margin:60px auto}
+  .err{color:var(--bad);font-size:13px;margin:-6px 0 10px}
+  .msg{color:var(--ok);font-size:13px;margin:-6px 0 10px}
+  .row{display:flex;gap:12px}
+  .row>*{flex:1}
+  .backlink{cursor:pointer;color:var(--mid);font-size:13px;margin-bottom:12px;display:inline-block}
+  .muted{color:#889}
+</style>
+</head>
+<body>
+
+<div id="authBox">
+  <div class="card">
+    <h2 style="margin-top:0">GVRM IEX</h2>
+    <div class="muted" style="margin-bottom:16px">Institutional Excellence & Transformation Platform</div>
+    <div id="loginForm">
+      <label>Email</label>
+      <input id="loginEmail" type="email" placeholder="admin@gvrm.local">
+      <label>Password</label>
+      <input id="loginPassword" type="password">
+      <div class="err hidden" id="loginErr"></div>
+      <button class="btn" onclick="doLogin()">Log in</button>
+      <div style="margin-top:14px;font-size:13px">No account? <a href="#" onclick="showRegister();return false;">Register your institution</a></div>
+    </div>
+    <div id="registerForm" class="hidden">
+      <label>Institution / Organization name</label>
+      <input id="regOrgName" placeholder="National Academy Central School">
+      <label>Organization code (short, unique)</label>
+      <input id="regOrgCode" placeholder="NACS">
+      <label>Your name</label>
+      <input id="regName">
+      <label>Email</label>
+      <input id="regEmail" type="email">
+      <label>Password (min 8 characters)</label>
+      <input id="regPassword" type="password">
+      <div class="err hidden" id="regErr"></div>
+      <button class="btn" onclick="doRegister()">Create account</button>
+      <div style="margin-top:14px;font-size:13px"><a href="#" onclick="showLogin();return false;">Back to login</a></div>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+<header>
+  <div>
+    <h1>GVRM IEX</h1>
+    <div class="tag">Diagnose → Analyze → Prioritize → Transform → Monitor → Improve</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:12px;opacity:.8" id="whoami"></div>
+    <button class="btn secondary" onclick="downloadPdf()" style="margin-top:6px">Download PDF Report</button>
+    <button class="btn secondary" onclick="logout()" style="margin-top:6px">Log out</button>
+  </div>
+</header>
+<nav>
+  <button id="nav-dashboard" onclick="go('dashboard')" class="active">Dashboard</button>
+  <button id="nav-domains" onclick="go('domains')">A–Z Domains</button>
+  <button id="nav-scorecards" onclick="go('scorecards')">Scorecards</button>
+  <button id="nav-gaps" onclick="go('gaps')">Gap Analysis</button>
+  <button id="nav-actions" onclick="go('actions')">Corrective Actions</button>
+  <button id="nav-structure" onclick="go('structure')">Campuses & Depts</button>
+  <button id="nav-profile" onclick="go('profile')">Institution Profile</button>
+  <button id="nav-team" onclick="go('team')">Team & Roles</button>
+  <button id="nav-audit" onclick="go('audit')">Audit Log</button>
+</nav>
+<main>
+
+  <section id="view-dashboard">
+    <div class="grid" id="dashStats"></div>
+    <div class="card">
+      <h3 style="margin-top:0">Overall maturity mix</h3>
+      <div id="dashBars"></div>
+    </div>
+  </section>
+
+  <section id="view-domains" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">A–Z Institutional Excellence Domains</h3>
+      <div class="domain-grid" id="domainGrid"></div>
+    </div>
+  </section>
+
+  <section id="view-domain-detail" class="hidden">
+    <span class="backlink" onclick="go('domains')">&larr; Back to domains</span>
+    <div class="card">
+      <h3 id="ddTitle" style="margin-top:0"></h3>
+      <p id="ddDesc" class="muted"></p>
+      <table>
+        <thead><tr><th>Code</th><th>Indicator</th><th>Last score</th><th></th></tr></thead>
+        <tbody id="ddIndicators"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="view-assess" class="hidden">
+    <span class="backlink" onclick="go('domains')">&larr; Back to domains</span>
+    <div class="card" style="max-width:520px">
+      <h3 id="assessTitle" style="margin-top:0"></h3>
+      <label>Score (0–100)</label>
+      <input id="assessScore" type="number" min="0" max="100" value="50">
+      <label>Observation / evidence notes</label>
+      <textarea id="assessObs" rows="4"></textarea>
+      <div class="err hidden" id="assessErr"></div>
+      <button class="btn" onclick="submitAssessment()">Save assessment</button>
+    </div>
+  </section>
+
+  <section id="view-scorecards" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">Domain-wise Scorecards (52 domains)</h3>
+      <table>
+        <thead><tr><th>Code</th><th>Domain</th><th>Avg Score</th><th>Maturity</th><th>Assessed</th></tr></thead>
+        <tbody id="scorecardTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="view-gaps" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">Gap Analysis <span class="muted" style="font-size:12px">(below 60 average, or not yet assessed)</span></h3>
+      <h4>Critical gaps</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Domain</th><th>Avg Score</th><th>Open actions</th></tr></thead>
+        <tbody id="gapsTable"></tbody>
+      </table>
+      <h4 style="margin-top:18px" id="unassessedHeading">Not yet assessed</h4>
+      <div id="unassessedList" class="muted" style="font-size:13px"></div>
+    </div>
+  </section>
+
+  <section id="view-structure" class="hidden">
+    <div class="card" style="max-width:480px">
+      <h3 style="margin-top:0">Add a Campus</h3>
+      <label>Campus name</label>
+      <input id="campusName" placeholder="e.g. Main Campus">
+      <button class="btn" onclick="addCampus()">Add campus</button>
+    </div>
+    <div class="card" id="campusListCard">
+      <h3 style="margin-top:0">Campuses & Departments</h3>
+      <div id="campusList"></div>
+    </div>
+  </section>
+
+  <section id="view-profile" class="hidden">
+    <div class="card" style="max-width:520px">
+      <h3 style="margin-top:0">Institution Profile</h3>
+      <div class="muted" style="font-size:12px;margin-bottom:10px">These details appear on your PDF audit reports.</div>
+      <label>School / Institution name</label>
+      <input id="profName">
+      <label>Address</label>
+      <input id="profAddress" placeholder="Street, City, District, State, PIN">
+      <label>Phone</label>
+      <input id="profPhone" placeholder="+91 ...">
+      <label>Principal's name</label>
+      <input id="profPrincipal">
+      <label>Academic year</label>
+      <input id="profYear" placeholder="e.g. 2026-27">
+      <label>Student strength / classes covered</label>
+      <input id="profStrength" placeholder="e.g. 450 students, Classes VI-XII">
+      <div class="err hidden" id="profErr"></div>
+      <div class="msg hidden" id="profMsg"></div>
+      <button class="btn" onclick="saveOrgProfile()">Save</button>
+    </div>
+  </section>
+
+  <section id="view-team" class="hidden">
+    <div class="card" style="max-width:480px">
+      <h3 style="margin-top:0">Invite a teammate</h3>
+      <label>Name</label>
+      <input id="teamName">
+      <label>Email</label>
+      <input id="teamEmail" type="email">
+      <label>Temporary password</label>
+      <input id="teamPassword" type="password">
+      <label>Role</label>
+      <select id="teamRole">
+        <option value="admin">Admin</option>
+        <option value="principal">Principal</option>
+        <option value="iqac" selected>IQAC Coordinator</option>
+        <option value="consultant">Consultant</option>
+      </select>
+      <div class="err hidden" id="teamErr"></div>
+      <button class="btn" onclick="addTeamMember()">Add teammate</button>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Team</h3>
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
+        <tbody id="teamTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="view-audit" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">Audit Log</h3>
+      <table>
+        <thead><tr><th>When</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>
+        <tbody id="auditTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="view-actions" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">Log a corrective action (CAPA)</h3>
+      <div class="row">
+        <div>
+          <label>Domain code</label>
+          <input id="actDomain" maxlength="1" placeholder="A">
+        </div>
+        <div>
+          <label>Priority</label>
+          <select id="actPriority"><option>Low</option><option selected>Medium</option><option>High</option></select>
+        </div>
+      </div>
+      <label>Title</label>
+      <input id="actTitle" placeholder="e.g. Update SOP for exam valuation">
+      <label>Description</label>
+      <textarea id="actDesc" rows="3"></textarea>
+      <label>Due date</label>
+      <input id="actDue" type="date">
+      <button class="btn" onclick="submitAction()">Add action</button>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Open & tracked actions</h3>
+      <table>
+        <thead><tr><th>Domain</th><th>Title</th><th>Priority</th><th>Due</th><th>Status</th></tr></thead>
+        <tbody id="actionsTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('gvrm_token') || null;
+let currentDomainCode = null;
+let currentIndicator = null;
+
+function showRegister(){ document.getElementById('loginForm').classList.add('hidden'); document.getElementById('registerForm').classList.remove('hidden'); }
+function showLogin(){ document.getElementById('registerForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); }
+
+async function api(path, opts={}){
+  opts.headers = opts.headers || {};
+  opts.headers['Content-Type'] = 'application/json';
+  if(token) opts.headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(API + path, opts);
+  if(res.status === 401){ logout(); throw new Error('Session expired'); }
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.detail || 'Request failed');
+  return data;
+}
+
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.classList.add('hidden');
+  try{
+    const data = await api('/api/auth/login', {method:'POST', body: JSON.stringify({email,password})});
+    token = data.access_token; localStorage.setItem('gvrm_token', token);
+    enterApp();
+  }catch(e){ errEl.textContent = e.message; errEl.classList.remove('hidden'); }
+}
+
+async function doRegister(){
+  const body = {
+    organization_name: document.getElementById('regOrgName').value.trim(),
+    organization_code: document.getElementById('regOrgCode').value.trim(),
+    name: document.getElementById('regName').value.trim(),
+    email: document.getElementById('regEmail').value.trim(),
+    password: document.getElementById('regPassword').value
+  };
+  const errEl = document.getElementById('regErr');
+  errEl.classList.add('hidden');
+  try{
+    const data = await api('/api/auth/register', {method:'POST', body: JSON.stringify(body)});
+    token = data.access_token; localStorage.setItem('gvrm_token', token);
+    enterApp();
+  }catch(e){ errEl.textContent = e.message; errEl.classList.remove('hidden'); }
+}
+
+function logout(){
+  token = null; localStorage.removeItem('gvrm_token');
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('authBox').classList.remove('hidden');
+}
+
+function enterApp(){
+  document.getElementById('authBox').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  loadWhoami();
+  go('dashboard');
+}
+
+const ALL_VIEWS = ['dashboard','domains','domain-detail','assess','actions','scorecards','gaps','structure','profile','team','audit'];
+const NAV_VIEWS = ['dashboard','domains','scorecards','gaps','actions','structure','profile','team','audit'];
+
+function setNav(name){
+  NAV_VIEWS.forEach(n=>{
+    const el = document.getElementById('nav-'+n);
+    if(el) el.classList.toggle('active', n===name);
+  });
+}
+
+async function go(view){
+  ALL_VIEWS.forEach(v=>{
+    document.getElementById('view-'+v).classList.add('hidden');
+  });
+  document.getElementById('view-'+view).classList.remove('hidden');
+  if(NAV_VIEWS.includes(view)) setNav(view);
+  if(view==='dashboard') await loadDashboard();
+  if(view==='domains') await loadDomains();
+  if(view==='actions') await loadActions();
+  if(view==='scorecards') await loadScorecards();
+  if(view==='gaps') await loadGaps();
+  if(view==='structure') await loadStructure();
+  if(view==='profile') await loadOrgProfile();
+  if(view==='team') await loadTeam();
+  if(view==='audit') await loadAudit();
+}
+
+async function loadScorecards(){
+  const rows = await api('/api/reports/scorecards');
+  document.getElementById('scorecardTable').innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r.code}</td><td>${r.name}</td>
+      <td>${r.average_score ?? '—'}</td>
+      <td><span class="pill ${r.maturity}">${r.maturity}</span></td>
+      <td>${r.assessed}/${r.total_indicators}</td>
+    </tr>`).join('');
+}
+
+async function loadGaps(){
+  const d = await api('/api/reports/gap-analysis');
+  document.getElementById('gapsTable').innerHTML = (d.gaps.length ? d.gaps : []).map(g=>`
+    <tr><td>${g.code}</td><td>${g.name}</td><td>${g.average_score}</td><td>${g.open_actions}</td></tr>
+  `).join('') || '<tr><td colspan="4" class="muted">No critical gaps below the threshold.</td></tr>';
+  document.getElementById('unassessedHeading').textContent = `Not yet assessed (${d.unassessed_domains.length})`;
+  document.getElementById('unassessedList').textContent = d.unassessed_domains.map(u=>u.code).join(', ') || 'All domains have at least one assessment.';
+}
+
+async function loadOrgProfile(){
+  const org = await api('/api/org');
+  document.getElementById('profName').value = org.name || '';
+  document.getElementById('profAddress').value = org.address || '';
+  document.getElementById('profPhone').value = org.phone || '';
+  document.getElementById('profPrincipal').value = org.principal_name || '';
+  document.getElementById('profYear').value = org.academic_year || '';
+  document.getElementById('profStrength').value = org.student_strength || '';
+}
+
+async function saveOrgProfile(){
+  const errEl = document.getElementById('profErr');
+  const msgEl = document.getElementById('profMsg');
+  errEl.classList.add('hidden'); msgEl.classList.add('hidden');
+  try{
+    await api('/api/org', {method:'PATCH', body: JSON.stringify({
+      name: document.getElementById('profName').value.trim(),
+      address: document.getElementById('profAddress').value.trim(),
+      phone: document.getElementById('profPhone').value.trim(),
+      principal_name: document.getElementById('profPrincipal').value.trim(),
+      academic_year: document.getElementById('profYear').value.trim(),
+      student_strength: document.getElementById('profStrength').value.trim()
+    })});
+    msgEl.textContent = 'Saved — these details will now appear on PDF reports.';
+    msgEl.classList.remove('hidden');
+  }catch(e){ errEl.textContent = e.message; errEl.classList.remove('hidden'); }
+}
+
+async function loadStructure(){
+  const campuses = await api('/api/structure/campuses');
+  document.getElementById('campusList').innerHTML = campuses.map(c=>`
+    <div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #eef0f4">
+      <b>${c.name}</b>
+      <div style="margin:6px 0 8px" class="muted">${c.departments.map(d=>d.name).join(', ') || 'No departments yet'}</div>
+      <div class="row">
+        <input placeholder="New department name" id="dept-${c.id}">
+        <button class="btn secondary" onclick="addDepartment(${c.id})">Add department</button>
+      </div>
+    </div>`).join('') || '<div class="muted">No campuses yet — add one above.</div>';
+}
+
+async function addCampus(){
+  const name = document.getElementById('campusName').value.trim();
+  if(!name) return;
+  await api('/api/structure/campuses', {method:'POST', body: JSON.stringify({name})});
+  document.getElementById('campusName').value='';
+  await loadStructure();
+}
+
+async function addDepartment(campusId){
+  const el = document.getElementById('dept-'+campusId);
+  const name = el.value.trim();
+  if(!name) return;
+  await api('/api/structure/departments', {method:'POST', body: JSON.stringify({campus_id: campusId, name})});
+  await loadStructure();
+}
+
+async function loadTeam(){
+  const rows = await api('/api/users');
+  document.getElementById('teamTable').innerHTML = rows.map(r=>`
+    <tr><td>${r.name}</td><td>${r.email}</td><td>${r.role}</td></tr>`).join('');
+}
+
+async function addTeamMember(){
+  const errEl = document.getElementById('teamErr');
+  errEl.classList.add('hidden');
+  try{
+    await api('/api/users', {method:'POST', body: JSON.stringify({
+      name: document.getElementById('teamName').value.trim(),
+      email: document.getElementById('teamEmail').value.trim(),
+      password: document.getElementById('teamPassword').value,
+      role: document.getElementById('teamRole').value
+    })});
+    document.getElementById('teamName').value='';
+    document.getElementById('teamEmail').value='';
+    document.getElementById('teamPassword').value='';
+    await loadTeam();
+  }catch(e){ errEl.textContent = e.message; errEl.classList.remove('hidden'); }
+}
+
+async function loadAudit(){
+  const rows = await api('/api/reports/audit-logs?limit=100');
+  document.getElementById('auditTable').innerHTML = rows.map(r=>`
+    <tr><td>${new Date(r.created_at).toLocaleString()}</td><td>${r.action}</td><td>${r.entity}${r.entity_id?' #'+r.entity_id:''}</td><td>${r.details||''}</td></tr>
+  `).join('');
+}
+
+async function downloadPdf(){
+  const res = await fetch('/api/reports/audit-report.pdf', {headers:{'Authorization':'Bearer '+token}});
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'audit-report.pdf'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function loadWhoami(){
+  try{
+    const me = await api('/api/auth/me');
+    document.getElementById('whoami').textContent = `${me.name} · ${me.role}`;
+  }catch(e){}
+}
+
+async function loadDashboard(){
+  const d = await api('/api/dashboard');
+  const statsEl = document.getElementById('dashStats');
+  statsEl.innerHTML = `
+    <div class="stat"><div class="num">${d.overall_score}</div><div class="label">Overall score</div></div>
+    <div class="stat"><div class="num">${d.assessments}</div><div class="label">Assessments logged</div></div>
+    <div class="stat"><div class="num">${d.open_actions}</div><div class="label">Open actions</div></div>
+  `;
+  const total = d.critical + d.needs_improvement + d.good + d.excellent || 1;
+  const bars = [
+    ['Critical', d.critical, 'var(--bad)'],
+    ['Needs Improvement', d.needs_improvement, 'var(--warn)'],
+    ['Good', d.good, 'var(--mid)'],
+    ['Excellent', d.excellent, 'var(--ok)']
+  ];
+  document.getElementById('dashBars').innerHTML = bars.map(([label,count,color])=>`
+    <div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span>${label}</span><span>${count}</span></div>
+      <div style="background:#eef0f4;border-radius:6px;height:10px"><div style="width:${(count/total*100).toFixed(0)}%;background:${color};height:10px;border-radius:6px"></div></div>
+    </div>`).join('');
+}
+
+async function loadDomains(){
+  const domains = await api('/api/domains');
+  document.getElementById('domainGrid').innerHTML = domains.map(d=>`
+    <div class="domain-tile" onclick="openDomain('${d.code}')">
+      <div class="code">${d.code}</div>
+      <div class="name">${d.name}</div>
+    </div>`).join('');
+}
+
+async function openDomain(code){
+  currentDomainCode = code;
+  const d = await api('/api/domains/'+code);
+  document.getElementById('ddTitle').textContent = d.code + ' — ' + d.name;
+  document.getElementById('ddDesc').textContent = d.description;
+  document.getElementById('ddIndicators').innerHTML = d.indicators.map(i=>`
+    <tr>
+      <td>${i.code}</td>
+      <td>${i.title}</td>
+      <td class="muted">—</td>
+      <td><button class="btn secondary" onclick='openAssess(${JSON.stringify(i).replace(/'/g,"&apos;")})'>Assess</button></td>
+    </tr>`).join('');
+  ['dashboard','domains','domain-detail','assess','actions'].forEach(v=>document.getElementById('view-'+v).classList.add('hidden'));
+  document.getElementById('view-domain-detail').classList.remove('hidden');
+}
+
+function openAssess(indicator){
+  currentIndicator = indicator;
+  document.getElementById('assessTitle').textContent = indicator.code + ' — ' + indicator.title;
+  document.getElementById('assessScore').value = 50;
+  document.getElementById('assessObs').value = '';
+  document.getElementById('assessErr').classList.add('hidden');
+  ['dashboard','domains','domain-detail','assess','actions'].forEach(v=>document.getElementById('view-'+v).classList.add('hidden'));
+  document.getElementById('view-assess').classList.remove('hidden');
+}
+
+async function submitAssessment(){
+  const errEl = document.getElementById('assessErr');
+  errEl.classList.add('hidden');
+  try{
+    await api('/api/assessments', {method:'POST', body: JSON.stringify({
+      indicator_id: currentIndicator.id,
+      score: parseInt(document.getElementById('assessScore').value || '0', 10),
+      observation: document.getElementById('assessObs').value
+    })});
+    await openDomain(currentDomainCode);
+  }catch(e){ errEl.textContent = e.message; errEl.classList.remove('hidden'); }
+}
+
+async function loadActions(){
+  const rows = await api('/api/actions');
+  document.getElementById('actionsTable').innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r.domain_code}</td>
+      <td>${r.title}</td>
+      <td>${r.priority}</td>
+      <td>${r.due_date || '—'}</td>
+      <td>${r.status}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="muted">No actions logged yet.</td></tr>';
+}
+
+async function submitAction(){
+  const body = {
+    domain_code: document.getElementById('actDomain').value.trim().toUpperCase(),
+    title: document.getElementById('actTitle').value.trim(),
+    description: document.getElementById('actDesc').value.trim(),
+    due_date: document.getElementById('actDue').value || null,
+    priority: document.getElementById('actPriority').value
+  };
+  await api('/api/actions', {method:'POST', body: JSON.stringify(body)});
+  document.getElementById('actTitle').value='';
+  document.getElementById('actDesc').value='';
+  document.getElementById('actDomain').value='';
+  await loadActions();
+}
+
+if(token){ enterApp(); }
+</script>
+</body>
+</html>
