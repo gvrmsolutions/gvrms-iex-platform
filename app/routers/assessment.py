@@ -29,6 +29,26 @@ def create_assessment(data: AssessmentIn, db: Session = Depends(get_db), user=De
               f"{indicator.code} scored {score}")
     return {"id": row.id, "indicator_id": row.indicator_id, "score": row.score, "maturity": row.maturity}
 
+@router.put("/{assessment_id}")
+def update_assessment(assessment_id: int, data: AssessmentIn, db: Session = Depends(get_db), user=Depends(current_user)):
+    row = db.query(Assessment).filter(
+        Assessment.id == assessment_id,
+        Assessment.organization_id == user.organization_id
+    ).first()
+    if not row:
+        raise HTTPException(404, "Assessment not found")
+
+    score = min(data.score, 100)
+    row.score = score
+    row.maturity = maturity(score)
+    row.observation = data.observation
+
+    db.commit()
+    db.refresh(row)
+    log_audit(db, user.organization_id, user.id, "update_assessment", "assessment", row.id,
+              f"score changed to {score}")
+    return {"id": row.id, "indicator_id": row.indicator_id, "score": row.score, "maturity": row.maturity}
+
 @router.get("")
 def assessments(db: Session = Depends(get_db), user=Depends(current_user)):
     rows = db.query(Assessment).filter(Assessment.organization_id == user.organization_id).order_by(Assessment.assessed_at.desc()).all()
