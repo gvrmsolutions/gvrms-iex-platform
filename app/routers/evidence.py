@@ -4,18 +4,30 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from ..db import get_db
-from ..models import Evidence
+from ..models import Evidence, Assessment
 from ..schemas import EvidenceIn
 from ..security import current_user
 from ..config import settings
-from ..services import log_audit
+from ..services import log_audit, maturity, compute_auto_score
 
 router = APIRouter(prefix="/api/evidence", tags=["Evidence"])
+
+def _rescore_assessment(db: Session, assessment_id: int | None):
+    if not assessment_id:
+        return
+    a = db.get(Assessment, assessment_id)
+    if not a:
+        return
+    evidence_count = db.query(Evidence).filter(Evidence.assessment_id == assessment_id).count()
+    a.score = compute_auto_score(a.criteria_met, a.observation, evidence_count)
+    a.maturity = maturity(a.score)
+    db.commit()
 
 @router.post("")
 def add_evidence(data: EvidenceIn, db: Session = Depends(get_db), user=Depends(current_user)):
     row = Evidence(organization_id=user.organization_id, uploaded_by=user.id, **data.model_dump())
     db.add(row); db.commit(); db.refresh(row)
+    _rescore_assessment(db, row.assessment_id)
     log_audit(db, user.organization_id, user.id, "add_evidence", "evidence", row.id, row.file_name)
     return {"id": row.id, "file_name": row.file_name, "storage_key": row.storage_key}
 
@@ -39,6 +51,7 @@ async def upload_evidence(assessment_id: int | None = None, file: UploadFile = F
         uploaded_by=user.id,
     )
     db.add(row); db.commit(); db.refresh(row)
+    _rescore_assessment(db, assessment_id)
     log_audit(db, user.organization_id, user.id, "upload_evidence", "evidence", row.id, row.file_name)
     return {"id": row.id, "file_name": row.file_name, "storage_key": row.storage_key}
 
