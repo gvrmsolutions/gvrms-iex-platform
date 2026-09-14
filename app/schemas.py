@@ -14,7 +14,7 @@ class LoginIn(BaseModel):
 
 class AssessmentIn(BaseModel):
     indicator_id: int
-    score: int = Field(ge=0, le=100)
+    criteria_met: int = Field(ge=0, le=5)
     observation: str = ""
     campus_id: int | None = None
     department_id: int | None = None
