@@ -138,12 +138,22 @@
     <span class="backlink" onclick="go('domains')">&larr; Back to domains</span>
     <div class="card" style="max-width:520px">
       <h3 id="assessTitle" style="margin-top:0"></h3>
-      <label>Score (0–100)</label>
-      <input id="assessScore" type="number" min="0" max="100" value="50">
+      <label>Checklist criteria met (out of 5)</label>
+      <select id="assessCriteria">
+        <option value="0">0 — None met</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5" selected>5 — All met</option>
+      </select>
       <label>Observation / evidence notes</label>
-      <textarea id="assessObs" rows="4"></textarea>
+      <textarea id="assessObs" rows="4" placeholder="Write a detailed note — richer notes score higher"></textarea>
+      <label>Upload evidence document (optional, boosts score)</label>
+      <input id="assessEvidenceFile" type="file">
       <div class="err hidden" id="assessErr"></div>
       <button class="btn" onclick="submitAssessment()">Save assessment</button>
+      <p style="font-size:12px;color:#888;margin-top:8px">Score is calculated automatically from checklist completion, evidence attached, and note detail — it is not entered manually.</p>
     </div>
   </section>
 
@@ -539,8 +549,9 @@ async function openDomain(code){
 function openAssess(indicator){
   currentIndicator = indicator;
   document.getElementById('assessTitle').textContent = indicator.code + ' — ' + indicator.title;
-  document.getElementById('assessScore').value = 50;
+  document.getElementById('assessCriteria').value = '5';
   document.getElementById('assessObs').value = '';
+  document.getElementById('assessEvidenceFile').value = '';
   document.getElementById('assessErr').classList.add('hidden');
   ['dashboard','domains','domain-detail','assess','actions'].forEach(v=>document.getElementById('view-'+v).classList.add('hidden'));
   document.getElementById('view-assess').classList.remove('hidden');
@@ -550,11 +561,21 @@ async function submitAssessment(){
   const errEl = document.getElementById('assessErr');
   errEl.classList.add('hidden');
   try{
-    await api('/api/assessments', {method:'POST', body: JSON.stringify({
+    const result = await api('/api/assessments', {method:'POST', body: JSON.stringify({
       indicator_id: currentIndicator.id,
-      score: parseInt(document.getElementById('assessScore').value || '0', 10),
+      criteria_met: parseInt(document.getElementById('assessCriteria').value, 10),
       observation: document.getElementById('assessObs').value
     })});
+    const file = document.getElementById('assessEvidenceFile').files[0];
+    if(file){
+      const fd = new FormData();
+      fd.append('file', file);
+      await fetch('/api/evidence/upload?assessment_id=' + result.id, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: fd
+      });
+    }
     await openDomain(currentDomainCode);
   }catch(e){ errEl.textContent = e.message; errEl.classList.remove('hidden'); }
 }
@@ -581,6 +602,8 @@ async function submitAction(){
     due_date: document.getElementById('actDue').value || null,
     priority: document.getElementById('actPriority').value
   };
+  if(!body.domain_code){ errEl.textContent = 'Domain code-ஐ கொடுங்க (e.g. A1)'; errEl.classList.remove('hidden'); return; }
+  if(!body.title){ errEl.textContent = 'Title-ஐ காலியா விடக்கூடாது'; errEl.classList.remove('hidden'); return; }
   try{
     await api('/api/actions', {method:'POST', body: JSON.stringify(body)});
     document.getElementById('actTitle').value='';
