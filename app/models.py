@@ -70,6 +70,7 @@ class Assessment(Base):
     department_id: Mapped[int | None] = mapped_column(ForeignKey("departments.id"), nullable=True)
     indicator_id: Mapped[int] = mapped_column(ForeignKey("indicators.id"))
     score: Mapped[int] = mapped_column(Integer, default=0)
+    criteria_met: Mapped[int] = mapped_column(Integer, default=0)
     maturity: Mapped[str] = mapped_column(String(30), default="Critical")
     observation: Mapped[str] = mapped_column(Text, default="")
     assessed_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
