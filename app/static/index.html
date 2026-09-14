@@ -249,7 +249,7 @@
       <div class="row">
         <div>
           <label>Domain code</label>
-          <input id="actDomain" maxlength="1" placeholder="A">
+          <input id="actDomain" maxlength="5" placeholder="A1">
         </div>
         <div>
           <label>Priority</label>
@@ -262,6 +262,7 @@
       <textarea id="actDesc" rows="3"></textarea>
       <label>Due date</label>
       <input id="actDue" type="date">
+      <div class="err hidden" id="actErr"></div>
       <button class="btn" onclick="submitAction()">Add action</button>
     </div>
     <div class="card">
@@ -571,6 +572,8 @@ async function loadActions(){
 }
 
 async function submitAction(){
+  const errEl = document.getElementById('actErr');
+  errEl.classList.add('hidden');
   const body = {
     domain_code: document.getElementById('actDomain').value.trim().toUpperCase(),
     title: document.getElementById('actTitle').value.trim(),
@@ -578,11 +581,13 @@ async function submitAction(){
     due_date: document.getElementById('actDue').value || null,
     priority: document.getElementById('actPriority').value
   };
-  await api('/api/actions', {method:'POST', body: JSON.stringify(body)});
-  document.getElementById('actTitle').value='';
-  document.getElementById('actDesc').value='';
-  document.getElementById('actDomain').value='';
-  await loadActions();
+  try{
+    await api('/api/actions', {method:'POST', body: JSON.stringify(body)});
+    document.getElementById('actTitle').value='';
+    document.getElementById('actDesc').value='';
+    document.getElementById('actDomain').value='';
+    await loadActions();
+  }catch(e){ errEl.textContent = e.message; errEl.classList.remove('hidden'); }
 }
 
 if(token){ enterApp(); }
