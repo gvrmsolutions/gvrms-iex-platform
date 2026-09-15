@@ -133,15 +133,42 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     for c in cards:
         data.append([c["code"], c["name"], c["average_score"] if c["average_score"] is not None else "—",
                      c["maturity"], f"{c['assessed']}/{c['total_indicators']}"])
+
+    maturity_colors = {
+        "Critical / Initial": colors.HexColor("#f4a3a3"),
+        "Needs Improvement": colors.HexColor("#ffcc99"),
+        "Developing": colors.HexColor("#fff2a8"),
+        "Proficient": colors.HexColor("#b9e6b9"),
+        "Excellent / Advanced": colors.HexColor("#7fcf7f"),
+        "Not Assessed": colors.HexColor("#dddddd"),
+    }
+
     tbl = Table(data, colWidths=[35, 210, 60, 100, 80])
-    tbl.setStyle(TableStyle([
+    tbl_style = [
         ("BACKGROUND", (0, 0), (-1, 0), navy),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTSIZE", (0, 0), (-1, -1), 8),
         ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f6fa")]),
-    ]))
+    ]
+    for i, c in enumerate(cards, start=1):
+        cell_color = maturity_colors.get(c["maturity"], colors.white)
+        tbl_style.append(("BACKGROUND", (3, i), (3, i), cell_color))
+        tbl_style.append(("FONTNAME", (3, i), (3, i), "Helvetica-Bold"))
+    tbl.setStyle(TableStyle(tbl_style))
     elements.append(tbl)
+    elements.append(Spacer(1, 8))
+
+    legend_data = [[
+        Paragraph(f"<font backColor='#f4a3a3'>&nbsp;&nbsp;&nbsp;</font> Critical/Initial", styles["Normal"]),
+        Paragraph(f"<font backColor='#ffcc99'>&nbsp;&nbsp;&nbsp;</font> Needs Improvement", styles["Normal"]),
+        Paragraph(f"<font backColor='#fff2a8'>&nbsp;&nbsp;&nbsp;</font> Developing", styles["Normal"]),
+        Paragraph(f"<font backColor='#b9e6b9'>&nbsp;&nbsp;&nbsp;</font> Proficient", styles["Normal"]),
+        Paragraph(f"<font backColor='#7fcf7f'>&nbsp;&nbsp;&nbsp;</font> Excellent/Advanced", styles["Normal"]),
+    ]]
+    legend = Table(legend_data, colWidths=[95, 105, 85, 80, 105])
+    legend.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 7), ("TOPPADDING", (0, 0), (-1, -1), 2)]))
+    elements.append(legend)
     elements.append(Spacer(1, 20))
 
     elements.append(Paragraph("<b>Open Corrective Actions (CAPA)</b>", styles["Heading2"]))
