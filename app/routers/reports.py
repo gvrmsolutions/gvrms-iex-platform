@@ -206,29 +206,57 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     [c for c in cards if c["average_score"] is not None],
     key=lambda c: c["average_score"]
 )[:20]
-    if scored_sorted:
-        bar_height = max(90, 16 * len(scored_sorted))
-        bar_drawing = Drawing(420, bar_height + 30)
-        bar_drawing.add(String(0, bar_height + 14, "Domain-wise Average Score (lowest-scoring, up to 20 shown)", fontSize=8, fontName="Helvetica-Bold"))
-        chart = HorizontalBarChart()
-        chart.x = 90
-        chart.y = 10
-        chart.width = 300
-        chart.height = bar_height
-        chart.data = [[c["average_score"] for c in scored_sorted]]
-        chart.categoryAxis.categoryNames = [f"{c['code']} {c['name'][:22]}" for c in scored_sorted]
-        chart.categoryAxis.labels.fontSize = 6
-        chart.valueAxis.valueMin = 0
-        chart.valueAxis.valueMax = 100
-        chart.valueAxis.valueStep = 20
-        chart.bars[0].fillColor = colors.HexColor("#1a2744")
-        for i, c in enumerate(scored_sorted):
-            chart.bars[(0, i)].fillColor = maturity_colors.get(c["maturity"], colors.HexColor("#1a2744"))
-        bar_drawing.add(chart)
-        elements.append(bar_drawing)
-    else:
-        elements.append(Paragraph("No domains scored yet — bar chart will appear once assessments begin.", styles["Normal"]))
-    elements.append(Spacer(1, 20))
+
+if scored_sorted:
+    bar_height = max(90, 16 * len(scored_sorted))
+    bar_drawing = Drawing(420, bar_height + 30)
+
+    bar_drawing.add(
+        String(
+            0,
+            bar_height + 14,
+            "Domain-wise Average Score (lowest-scoring, up to 20 shown)",
+            fontSize=8,
+            fontName="Helvetica-Bold"
+        )
+    )
+
+    chart = HorizontalBarChart()
+    chart.x = 90
+    chart.y = 10
+    chart.width = 300
+    chart.height = bar_height
+
+    chart.data = [
+        [c["average_score"] for c in scored_sorted]
+    ]
+
+    chart.categoryAxis.categoryNames = [
+        f"{c['code']} {c['name'][:22]}"
+        for c in scored_sorted
+    ]
+
+    chart.categoryAxis.labels.fontSize = 6
+
+    chart.valueAxis.valueMin = 0
+    chart.valueAxis.valueMax = 100
+    chart.valueAxis.valueStep = 20
+
+    # CORRECTED — keep only this
+    chart.bars[0].fillColor = colors.HexColor("#1a2744")
+
+    bar_drawing.add(chart)
+    elements.append(bar_drawing)
+
+else:
+    elements.append(
+        Paragraph(
+            "No domains scored yet — bar chart will appear once assessments begin.",
+            styles["Normal"]
+        )
+    )
+
+elements.append(Spacer(1, 20))
 
     elements.append(Paragraph("<b>Open Corrective Actions (CAPA)</b>", styles["Heading2"]))
     if open_actions:
