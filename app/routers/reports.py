@@ -71,6 +71,10 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     from reportlab.lib import colors
     from reportlab.lib.units import mm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
+    from reportlab.graphics.shapes import Drawing, String
+    from reportlab.graphics.charts.piecharts import Pie
+    from reportlab.graphics.charts.barcharts import HorizontalBarChart
+    from reportlab.graphics.charts.legends import Legend
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib.enums import TA_CENTER
 
@@ -169,6 +173,58 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     legend = Table(legend_data, colWidths=[95, 105, 85, 80, 105])
     legend.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 7), ("TOPPADDING", (0, 0), (-1, -1), 2)]))
     elements.append(legend)
+    elements.append(Spacer(1, 20))
+
+    # ---- Graphical presentation: maturity distribution + domain score bar chart ----
+    elements.append(Paragraph("<b>Graphical Presentation</b>", styles["Heading2"]))
+    elements.append(Spacer(1, 6))
+
+    dist_order = ["Critical / Initial", "Needs Improvement", "Developing", "Proficient", "Excellent / Advanced", "Not Assessed"]
+    dist_colors = [colors.HexColor("#e57373"), colors.HexColor("#ffb04d"), colors.HexColor("#f0d030"),
+                   colors.HexColor("#6fbf6f"), colors.HexColor("#3d9e3d"), colors.HexColor("#bbbbbb")]
+    dist_counts = [len([c for c in cards if c["maturity"] == m]) for m in dist_order]
+
+    pie_drawing = Drawing(240, 170)
+    pie = Pie()
+    pie.x = 15
+    pie.y = 15
+    pie.width = 130
+    pie.height = 130
+    pie.data = [max(v, 0.0001) for v in dist_counts]
+    pie.labels = [f"{m.split(' / ')[0]} ({v})" for m, v in zip(dist_order, dist_counts)]
+    pie.simpleLabels = 0
+    pie.sideLabels = 1
+    for i, c in enumerate(dist_colors):
+        pie.slices[i].fillColor = c
+        pie.slices[i].fontSize = 6
+    pie_drawing.add(pie)
+    pie_drawing.add(String(15, 158, "Maturity Distribution (52 Domains)", fontSize=8, fontName="Helvetica-Bold"))
+    elements.append(pie_drawing)
+    elements.append(Spacer(1, 10))
+
+    scored_sorted = sorted(assessed_cards, key=lambda c: c["average_score"])
+    if scored_sorted:
+        bar_height = max(140, 16 * len(scored_sorted))
+        bar_drawing = Drawing(480, bar_height + 30)
+        bar_drawing.add(String(0, bar_height + 14, "Domain-wise Average Score (Assessed Domains)", fontSize=8, fontName="Helvetica-Bold"))
+        chart = HorizontalBarChart()
+        chart.x = 90
+        chart.y = 10
+        chart.width = 340
+        chart.height = bar_height
+        chart.data = [[c["average_score"] for c in scored_sorted]]
+        chart.categoryAxis.categoryNames = [f"{c['code']} {c['name'][:22]}" for c in scored_sorted]
+        chart.categoryAxis.labels.fontSize = 6
+        chart.valueAxis.valueMin = 0
+        chart.valueAxis.valueMax = 100
+        chart.valueAxis.valueStep = 20
+        chart.bars[0].fillColor = colors.HexColor("#1a2744")
+        for i, c in enumerate(scored_sorted):
+            chart.bars[(0, i)].fillColor = maturity_colors.get(c["maturity"], colors.HexColor("#1a2744"))
+        bar_drawing.add(chart)
+        elements.append(bar_drawing)
+    else:
+        elements.append(Paragraph("No domains scored yet — bar chart will appear once assessments begin.", styles["Normal"]))
     elements.append(Spacer(1, 20))
 
     elements.append(Paragraph("<b>Open Corrective Actions (CAPA)</b>", styles["Heading2"]))
