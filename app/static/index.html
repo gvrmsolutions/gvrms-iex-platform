@@ -52,6 +52,11 @@
   .mat-excellent .mat{background:#7fcf7f;color:#134d13}
   .mat-none{border-left-color:#bbb !important}
   .mat-none .mat{background:#dddddd;color:#555}
+  .status-pill{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;display:inline-block}
+  .status-done{background:#b9e6b9;color:#1f5c1f}
+  .status-ontrack{background:#c8e6c9;color:#256029}
+  .status-duesoon{background:#ffe6a8;color:#7a4a00}
+  .status-overdue{background:#f4a3a3;color:#7a1f1f}
   .hidden{display:none}
   #authBox{max-width:420px;margin:60px auto}
   .err{color:var(--bad);font-size:13px;margin:-6px 0 10px}
@@ -610,16 +615,29 @@ async function submitAssessment(){
   }catch(e){ errEl.textContent = e.message; errEl.classList.remove('hidden'); }
 }
 
+function actionUrgency(priority, createdAt, status){
+  if(status === 'Completed') return {cls:'status-done', label:'Completed'};
+  const slaDays = {High:1, Medium:30, Low:90}[priority] || 30;
+  const created = new Date(createdAt);
+  const elapsedDays = (Date.now() - created.getTime()) / 86400000;
+  if(elapsedDays > slaDays) return {cls:'status-overdue', label:status + ' · Overdue to start'};
+  if(elapsedDays > slaDays * 0.7) return {cls:'status-duesoon', label:status + ' · Due soon'};
+  return {cls:'status-ontrack', label:status + ' · On track'};
+}
+
 async function loadActions(){
   const rows = await api('/api/actions');
-  document.getElementById('actionsTable').innerHTML = rows.map(r=>`
+  document.getElementById('actionsTable').innerHTML = rows.map(r=>{
+    const u = actionUrgency(r.priority, r.created_at, r.status);
+    return `
     <tr>
       <td>${r.domain_code}</td>
       <td>${r.title}</td>
       <td>${r.priority}</td>
       <td>${r.due_date || '—'}</td>
-      <td>${r.status}</td>
-    </tr>`).join('') || '<tr><td colspan="5" class="muted">No actions logged yet.</td></tr>';
+      <td><span class="status-pill ${u.cls}">${u.label}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" class="muted">No actions logged yet.</td></tr>';
 }
 
 async function submitAction(){
