@@ -58,5 +58,6 @@ def actions(db: Session = Depends(get_db), user=Depends(current_user)):
     rows=db.query(Action).filter(Action.organization_id==user.organization_id).order_by(Action.id.desc()).all()
     return [{
         "id":r.id,"domain_code":r.domain_code,"title":r.title,"description":r.description,
-        "owner_id":r.owner_id,"due_date":r.due_date,"priority":r.priority,"status":r.status
+        "owner_id":r.owner_id,"due_date":r.due_date,"priority":r.priority,"status":r.status,
+        "created_at":r.created_at
     } for r in rows]
