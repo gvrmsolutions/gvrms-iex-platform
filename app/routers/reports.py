@@ -173,16 +173,50 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
 
     elements.append(Paragraph("<b>Open Corrective Actions (CAPA)</b>", styles["Heading2"]))
     if open_actions:
+        from datetime import datetime as _dt
+        sla_days_map = {"High": 1, "Medium": 30, "Low": 90}
+        urgency_colors = {
+            "done": colors.HexColor("#b9e6b9"),
+            "ontrack": colors.HexColor("#c8e6c9"),
+            "duesoon": colors.HexColor("#ffe6a8"),
+            "overdue": colors.HexColor("#f4a3a3"),
+        }
+
+        def _urgency_key(a):
+            if a.status == "Completed":
+                return "done"
+            sla = sla_days_map.get(a.priority, 30)
+            elapsed = (_dt.utcnow() - a.created_at).total_seconds() / 86400
+            if elapsed > sla:
+                return "overdue"
+            if elapsed > sla * 0.7:
+                return "duesoon"
+            return "ontrack"
+
         adata = [["Domain", "Title", "Priority", "Due Date", "Status"]]
         for a in open_actions:
             adata.append([a.domain_code, a.title, a.priority, str(a.due_date or "—"), a.status])
         atbl = Table(adata, colWidths=[45, 220, 60, 80, 80])
-        atbl.setStyle(TableStyle([
+        atbl_style = [
             ("BACKGROUND", (0, 0), (-1, 0), gold),
             ("FONTSIZE", (0, 0), (-1, -1), 8),
             ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
-        ]))
+        ]
+        for i, a in enumerate(open_actions, start=1):
+            key = _urgency_key(a)
+            atbl_style.append(("BACKGROUND", (4, i), (4, i), urgency_colors[key]))
+            atbl_style.append(("FONTNAME", (4, i), (4, i), "Helvetica-Bold"))
+        atbl.setStyle(TableStyle(atbl_style))
         elements.append(atbl)
+        elements.append(Spacer(1, 6))
+        action_legend = Table([[
+            Paragraph("<font backColor='#f4a3a3'>&nbsp;&nbsp;&nbsp;</font> Overdue to start", styles["Normal"]),
+            Paragraph("<font backColor='#ffe6a8'>&nbsp;&nbsp;&nbsp;</font> Due soon", styles["Normal"]),
+            Paragraph("<font backColor='#c8e6c9'>&nbsp;&nbsp;&nbsp;</font> On track", styles["Normal"]),
+            Paragraph("<font backColor='#b9e6b9'>&nbsp;&nbsp;&nbsp;</font> Completed", styles["Normal"]),
+        ]], colWidths=[110, 90, 90, 90])
+        action_legend.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 7), ("TOPPADDING", (0, 0), (-1, -1), 2)]))
+        elements.append(action_legend)
     else:
         elements.append(Paragraph("No open corrective actions.", styles["Normal"]))
 
