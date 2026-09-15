@@ -220,6 +220,74 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     else:
         elements.append(Paragraph("No open corrective actions.", styles["Normal"]))
 
+    # ---- Overall Assessment Summary / Consultant's Observations & Suggestions / Conclusion ----
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("<b>Overall Assessment Summary</b>", styles["Heading2"]))
+
+    total_domains = len(cards)
+    not_assessed = [c for c in cards if c["average_score"] is None]
+    assessed_cards = [c for c in cards if c["average_score"] is not None]
+    critical = [c for c in assessed_cards if c["maturity"] == "Critical / Initial"]
+    needs_imp = [c for c in assessed_cards if c["maturity"] == "Needs Improvement"]
+    strong = [c for c in assessed_cards if c["maturity"] in ("Proficient", "Excellent / Advanced")]
+    weakest = sorted(assessed_cards, key=lambda c: c["average_score"])[:3]
+
+    overall_band = (
+        "an early / critical" if overall < 40 else
+        "a developing" if overall < 60 else
+        "a moderately mature" if overall < 75 else
+        "a proficient" if overall < 90 else
+        "an excellent"
+    )
+
+    summary_txt = (
+        f"Out of the 52-domain institutional excellence framework, {len(assessed_cards)} domain(s) have been "
+        f"assessed so far and {len(not_assessed)} remain pending. The overall institutional score stands at "
+        f"{overall}/100, placing the institution at {overall_band} stage of readiness. "
+        f"{len(critical)} domain(s) fall in the Critical/Initial band, {len(needs_imp)} need improvement, and "
+        f"{len(strong)} are already at a Proficient or Excellent level. There are currently {len(open_actions)} "
+        f"open corrective action(s) being tracked."
+    )
+    elements.append(Paragraph(summary_txt, styles["Normal"]))
+    elements.append(Spacer(1, 12))
+
+    elements.append(Paragraph("<b>Consultant's Observations</b>", styles["Heading2"]))
+    if weakest:
+        weak_list = ", ".join(f"{c['code']} ({c['name']}, {c['average_score']})" for c in weakest)
+        obs_txt = (
+            f"The areas needing the most immediate attention are {weak_list}. "
+            f"These domains score below the institutional average and reflect gaps in documentation, "
+            f"process consistency, or review cadence rather than a single point failure."
+        )
+    else:
+        obs_txt = "No domains have been scored yet; observations will populate once assessments begin."
+    elements.append(Paragraph(obs_txt, styles["Normal"]))
+    elements.append(Spacer(1, 12))
+
+    elements.append(Paragraph("<b>Suggestions</b>", styles["Heading2"]))
+    suggestions = []
+    if not_assessed:
+        suggestions.append(f"Prioritize assessing the {len(not_assessed)} pending domain(s) to get a complete institutional picture.")
+    if critical:
+        suggestions.append(f"Open corrective actions for all {len(critical)} Critical/Initial domain(s) if not already logged, with High priority and near-term due dates.")
+    if needs_imp:
+        suggestions.append(f"Schedule a structured review cycle for the {len(needs_imp)} 'Needs Improvement' domain(s) over the next quarter.")
+    if not open_actions and (critical or needs_imp):
+        suggestions.append("No corrective actions are currently open despite existing gaps — logging actions will help track closure.")
+    if not suggestions:
+        suggestions.append("Maintain the current review cadence and continue periodic re-assessment to sustain the institution's maturity level.")
+    for s in suggestions:
+        elements.append(Paragraph(f"• {s}", styles["Normal"]))
+    elements.append(Spacer(1, 12))
+
+    elements.append(Paragraph("<b>Conclusion</b>", styles["Heading2"]))
+    conclusion_txt = (
+        f"The institution is currently at {overall_band} stage of institutional excellence "
+        f"({overall}/100 overall). With focused attention on the domains flagged above and consistent "
+        f"tracking of corrective actions, measurable improvement is achievable within the next assessment cycle."
+    )
+    elements.append(Paragraph(conclusion_txt, styles["Normal"]))
+
     # Signature block
     elements.append(Spacer(1, 40))
     sig_table = Table(
