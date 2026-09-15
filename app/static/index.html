@@ -92,7 +92,7 @@
 </head>
 <body>
 
-<div id="splashScreen">
+<div id="splashScreen" class="hidden">
   <div class="splash-inner">
     <img src="assets/gvrm_logo.png" alt="G.V.R.M. Solutions" class="splash-logo">
     <div class="splash-name">G.V.R.M. SOLUTIONS</div>
@@ -346,15 +346,11 @@ let token = localStorage.getItem('gvrm_token') || null;
 let currentDomainCode = null;
 let currentIndicator = null;
 
-(function(){
+function dismissSplash(){
   const splash = document.getElementById('splashScreen');
-  function dismissSplash(){
-    splash.classList.add('fade-out');
-    setTimeout(()=>splash.classList.add('hidden'), 850);
-  }
-  splash.addEventListener('click', dismissSplash);
-  setTimeout(dismissSplash, 2800);
-})();
+  splash.classList.add('fade-out');
+  setTimeout(()=>splash.classList.add('hidden'), 850);
+}
 
 function showRegister(){ document.getElementById('loginForm').classList.add('hidden'); document.getElementById('registerForm').classList.remove('hidden'); }
 function showLogin(){ document.getElementById('registerForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); }
@@ -410,6 +406,12 @@ function enterApp(){
   document.getElementById('app').classList.remove('hidden');
   loadWhoami();
   go('dashboard');
+
+  const splash = document.getElementById('splashScreen');
+  splash.classList.remove('hidden');
+  splash.classList.remove('fade-out');
+  splash.onclick = dismissSplash;
+  setTimeout(dismissSplash, 2800);
 }
 
 const ALL_VIEWS = ['dashboard','domains','domain-detail','assess','actions','scorecards','gaps','structure','profile','team','audit'];
