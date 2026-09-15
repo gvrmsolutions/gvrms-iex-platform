@@ -39,6 +39,19 @@
   .domain-tile:hover{background:#f8f6ee}
   .domain-tile .code{font-weight:800;color:var(--navy);font-size:20px}
   .domain-tile .name{font-size:12px;color:#556;margin-top:2px}
+  .domain-tile .mat{font-size:10px;font-weight:700;margin-top:6px;display:inline-block;padding:2px 6px;border-radius:4px}
+  .mat-critical{border-left-color:#e57373 !important}
+  .mat-critical .mat{background:#f4a3a3;color:#7a1f1f}
+  .mat-needs{border-left-color:#ffb04d !important}
+  .mat-needs .mat{background:#ffcc99;color:#7a4a00}
+  .mat-developing{border-left-color:#f0d030 !important}
+  .mat-developing .mat{background:#fff2a8;color:#665800}
+  .mat-proficient{border-left-color:#6fbf6f !important}
+  .mat-proficient .mat{background:#b9e6b9;color:#1f5c1f}
+  .mat-excellent{border-left-color:#4caf50 !important}
+  .mat-excellent .mat{background:#7fcf7f;color:#134d13}
+  .mat-none{border-left-color:#bbb !important}
+  .mat-none .mat{background:#dddddd;color:#555}
   .hidden{display:none}
   #authBox{max-width:420px;margin:60px auto}
   .err{color:var(--bad);font-size:13px;margin:-6px 0 10px}
@@ -521,13 +534,30 @@ async function loadDashboard(){
     </div>`).join('');
 }
 
+function maturityClass(m){
+  if(m === "Critical / Initial") return "mat-critical";
+  if(m === "Needs Improvement") return "mat-needs";
+  if(m === "Developing") return "mat-developing";
+  if(m === "Proficient") return "mat-proficient";
+  if(m === "Excellent / Advanced") return "mat-excellent";
+  return "mat-none";
+}
+
 async function loadDomains(){
-  const domains = await api('/api/domains');
-  document.getElementById('domainGrid').innerHTML = domains.map(d=>`
-    <div class="domain-tile" onclick="openDomain('${d.code}')">
+  const [domains, cards] = await Promise.all([api('/api/domains'), api('/api/reports/scorecards')]);
+  const byCode = {};
+  cards.forEach(c => byCode[c.code] = c);
+  document.getElementById('domainGrid').innerHTML = domains.map(d=>{
+    const c = byCode[d.code] || {};
+    const mClass = maturityClass(c.maturity);
+    const scoreLabel = c.average_score != null ? c.average_score : '—';
+    return `
+    <div class="domain-tile ${mClass}" onclick="openDomain('${d.code}')">
       <div class="code">${d.code}</div>
       <div class="name">${d.name}</div>
-    </div>`).join('');
+      <div class="mat">${c.maturity || 'Not Assessed'} · ${scoreLabel}</div>
+    </div>`;
+  }).join('');
 }
 
 async function openDomain(code){
