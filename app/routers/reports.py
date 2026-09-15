@@ -202,15 +202,15 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     elements.append(pie_drawing)
     elements.append(Spacer(1, 10))
 
-    scored_sorted = sorted(assessed_cards, key=lambda c: c["average_score"])
+    scored_sorted = sorted(assessed_cards, key=lambda c: c["average_score"])[:20]
     if scored_sorted:
-        bar_height = max(140, 16 * len(scored_sorted))
-        bar_drawing = Drawing(480, bar_height + 30)
-        bar_drawing.add(String(0, bar_height + 14, "Domain-wise Average Score (Assessed Domains)", fontSize=8, fontName="Helvetica-Bold"))
+        bar_height = max(90, 16 * len(scored_sorted))
+        bar_drawing = Drawing(420, bar_height + 30)
+        bar_drawing.add(String(0, bar_height + 14, "Domain-wise Average Score (lowest-scoring, up to 20 shown)", fontSize=8, fontName="Helvetica-Bold"))
         chart = HorizontalBarChart()
         chart.x = 90
         chart.y = 10
-        chart.width = 340
+        chart.width = 300
         chart.height = bar_height
         chart.data = [[c["average_score"] for c in scored_sorted]]
         chart.categoryAxis.categoryNames = [f"{c['code']} {c['name'][:22]}" for c in scored_sorted]
