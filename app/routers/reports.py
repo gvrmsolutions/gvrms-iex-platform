@@ -202,7 +202,10 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     elements.append(pie_drawing)
     elements.append(Spacer(1, 10))
 
-    scored_sorted = sorted(assessed_cards, key=lambda c: c["average_score"])[:20]
+    scored_sorted = sorted(
+    [c for c in cards if c["average_score"] is not None],
+    key=lambda c: c["average_score"]
+)[:20]
     if scored_sorted:
         bar_height = max(90, 16 * len(scored_sorted))
         bar_drawing = Drawing(420, bar_height + 30)
