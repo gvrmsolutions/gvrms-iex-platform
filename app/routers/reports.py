@@ -164,8 +164,8 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     sig_table = Table(
         [["_______________________________", ""],
          ["G. Veerapandian", ""],
-         ["Academic Institutional Coach", ""],
-         ["GVRM Solutions, Ramanathapuram", ""],
+         ["Founder | Institutional Excellence Consultant", ""],
+         ["G.V.R.M. SOLUTIONS, Ramanathapuram", ""],
          ["Phone: +91 6383858318  |  Email: info.g.v.r.m.solutions.in@gmail.com", ""]],
         colWidths=[300, 200]
     )
