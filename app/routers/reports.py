@@ -230,6 +230,7 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     elements.append(Paragraph("<b>Graphical Presentation</b>", styles["Heading2"]))
     elements.append(Spacer(1, 6))
 
+    assessed_cards = [c for c in cards if c["average_score"] is not None]
     dist_order = ["Critical / Initial", "Needs Improvement", "Developing", "Proficient", "Excellent / Advanced", "Not Assessed"]
     dist_colors = [colors.HexColor("#e57373"), colors.HexColor("#ffb04d"), colors.HexColor("#f0d030"),
                    colors.HexColor("#6fbf6f"), colors.HexColor("#3d9e3d"), colors.HexColor("#bbbbbb")]
@@ -333,7 +334,6 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
 
     total_domains = len(cards)
     not_assessed = [c for c in cards if c["average_score"] is None]
-    assessed_cards = [c for c in cards if c["average_score"] is not None]
     critical = [c for c in assessed_cards if c["maturity"] == "Critical / Initial"]
     needs_imp = [c for c in assessed_cards if c["maturity"] == "Needs Improvement"]
     strong = [c for c in assessed_cards if c["maturity"] in ("Proficient", "Excellent / Advanced")]
