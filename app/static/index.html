@@ -157,6 +157,7 @@
   <button id="nav-profile" onclick="go('profile')">Institution Profile</button>
   <button id="nav-team" onclick="go('team')">Team & Roles</button>
   <button id="nav-audit" onclick="go('audit')">Audit Log</button>
+  <button id="nav-findings" onclick="go('findings')">Findings & CAPA Plan</button>
 </nav>
 <main>
 
@@ -306,6 +307,25 @@
     </div>
   </section>
 
+  <section id="view-findings" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">Consolidated Findings Register</h3>
+      <table>
+        <thead><tr><th>Code</th><th>Domain</th><th>Score</th><th>Maturity</th><th>Finding</th></tr></thead>
+        <tbody id="findingsTable"></tbody>
+      </table>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin-top:0">Recommendations &amp; 90-Day CAPA Plan</h3>
+      <h4 style="margin-bottom:4px">0–30 days</h4>
+      <table><tbody id="capa30"></tbody></table>
+      <h4 style="margin-bottom:4px;margin-top:16px">31–60 days</h4>
+      <table><tbody id="capa60"></tbody></table>
+      <h4 style="margin-bottom:4px;margin-top:16px">61–90 days</h4>
+      <table><tbody id="capa90"></tbody></table>
+    </div>
+  </section>
+
   <section id="view-actions" class="hidden">
     <div class="card">
       <h3 style="margin-top:0">Log a corrective action (CAPA)</h3>
@@ -414,8 +434,8 @@ function enterApp(){
   setTimeout(dismissSplash, 2800);
 }
 
-const ALL_VIEWS = ['dashboard','domains','domain-detail','assess','actions','scorecards','gaps','structure','profile','team','audit'];
-const NAV_VIEWS = ['dashboard','domains','scorecards','gaps','actions','structure','profile','team','audit'];
+const ALL_VIEWS = ['dashboard','domains','domain-detail','assess','actions','scorecards','gaps','structure','profile','team','audit','findings'];
+const NAV_VIEWS = ['dashboard','domains','scorecards','gaps','actions','structure','profile','team','audit','findings'];
 
 function toggleNav(){
   document.querySelector('nav').classList.toggle('open');
@@ -444,6 +464,7 @@ async function go(view){
   if(view==='profile') await loadOrgProfile();
   if(view==='team') await loadTeam();
   if(view==='audit') await loadAudit();
+  if(view==='findings') await loadFindings();
 }
 
 async function loadScorecards(){
@@ -598,6 +619,47 @@ function maturityClass(m){
   if(m === "Proficient") return "mat-proficient";
   if(m === "Excellent / Advanced") return "mat-excellent";
   return "mat-none";
+}
+
+function maturityColor(m){
+  const map = {
+    'Critical / Initial': '#f4a3a3',
+    'Needs Improvement': '#ffcc99',
+    'Developing': '#fff2a8',
+    'Proficient': '#b9e6b9',
+    'Excellent / Advanced': '#7fcf7f',
+  };
+  return map[m] || '#dddddd';
+}
+
+function capaRows(bucket){
+  if(!bucket.length) return '<tr><td class="muted" colspan="4">No items in this window.</td></tr>';
+  return bucket.map(a=>`
+    <tr>
+      <td>${a.domain_code}</td>
+      <td>${a.title}</td>
+      <td>${a.priority}</td>
+      <td>${a.status}</td>
+    </tr>`).join('');
+}
+
+async function loadFindings(){
+  const [rows, plan] = await Promise.all([
+    api('/api/reports/findings-register'),
+    api('/api/reports/capa-plan')
+  ]);
+  document.getElementById('findingsTable').innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r.code}</td>
+      <td>${r.name}</td>
+      <td>${r.average_score ?? '—'}</td>
+      <td><span class="status-pill" style="background:${maturityColor(r.maturity)};color:#333">${r.maturity}</span></td>
+      <td>${r.finding}</td>
+    </tr>`).join('');
+
+  document.getElementById('capa30').innerHTML = capaRows(plan.window_0_30);
+  document.getElementById('capa60').innerHTML = capaRows(plan.window_31_60);
+  document.getElementById('capa90').innerHTML = capaRows(plan.window_61_90);
 }
 
 async function loadDomains(){
