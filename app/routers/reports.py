@@ -40,6 +40,57 @@ def _domain_scorecards(db: Session, org_id: int):
 def scorecards(db: Session = Depends(get_db), user=Depends(current_user)):
     return _domain_scorecards(db, user.organization_id)
 
+def _finding_text(c):
+    if c["average_score"] is None:
+        return "Not yet assessed — schedule baseline assessment"
+    if c["maturity"] == "Critical / Initial":
+        return "Immediate attention required — significant gaps"
+    if c["maturity"] == "Needs Improvement":
+        return "Below institutional standard — improvement needed"
+    if c["maturity"] == "Developing":
+        return "Progressing — reinforce process consistency"
+    if c["maturity"] == "Proficient":
+        return "Meets institutional standard"
+    return "Exceeds institutional standard — sustain practice"
+
+@router.get("/findings-register")
+def findings_register(db: Session = Depends(get_db), user=Depends(current_user)):
+    cards = _domain_scorecards(db, user.organization_id)
+    return [{**c, "finding": _finding_text(c)} for c in cards]
+
+@router.get("/capa-plan")
+def capa_plan(db: Session = Depends(get_db), user=Depends(current_user)):
+    cards = _domain_scorecards(db, user.organization_id)
+    assessed_cards = [c for c in cards if c["average_score"] is not None]
+    critical = [c for c in assessed_cards if c["maturity"] == "Critical / Initial"]
+    needs_imp = [c for c in assessed_cards if c["maturity"] == "Needs Improvement"]
+
+    open_actions = (db.query(Action)
+                     .filter(Action.organization_id == user.organization_id, Action.status != "Completed")
+                     .all())
+
+    bucket_30, bucket_60, bucket_90 = [], [], []
+    for a in open_actions:
+        item = {"domain_code": a.domain_code, "title": a.title, "priority": a.priority, "status": a.status}
+        if a.priority == "High":
+            bucket_30.append(item)
+        elif a.priority == "Medium":
+            bucket_60.append(item)
+        else:
+            bucket_90.append(item)
+
+    actioned_codes = {a.domain_code for a in open_actions}
+    for c in critical:
+        if c["code"] not in actioned_codes:
+            bucket_30.append({"domain_code": c["code"], "title": f"Log corrective action for {c['name']}",
+                               "priority": "High", "status": "Not Started"})
+    for c in needs_imp:
+        if c["code"] not in actioned_codes:
+            bucket_60.append({"domain_code": c["code"], "title": f"Log corrective action for {c['name']}",
+                               "priority": "Medium", "status": "Not Started"})
+
+    return {"window_0_30": bucket_30, "window_31_60": bucket_60, "window_61_90": bucket_90}
+
 @router.get("/gap-analysis")
 def gap_analysis(threshold: int = 60, db: Session = Depends(get_db), user=Depends(current_user)):
     cards = _domain_scorecards(db, user.organization_id)
@@ -202,61 +253,30 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     elements.append(pie_drawing)
     elements.append(Spacer(1, 10))
 
-    scored_sorted = sorted(
-    [c for c in cards if c["average_score"] is not None],
-    key=lambda c: c["average_score"]
-)[:20]
-
-if scored_sorted:
-    bar_height = max(90, 16 * len(scored_sorted))
-    bar_drawing = Drawing(420, bar_height + 30)
-
-    bar_drawing.add(
-        String(
-            0,
-            bar_height + 14,
-            "Domain-wise Average Score (lowest-scoring, up to 20 shown)",
-            fontSize=8,
-            fontName="Helvetica-Bold"
-        )
-    )
-
-    chart = HorizontalBarChart()
-    chart.x = 90
-    chart.y = 10
-    chart.width = 300
-    chart.height = bar_height
-
-    chart.data = [
-        [c["average_score"] for c in scored_sorted]
-    ]
-
-    chart.categoryAxis.categoryNames = [
-        f"{c['code']} {c['name'][:22]}"
-        for c in scored_sorted
-    ]
-
-    chart.categoryAxis.labels.fontSize = 6
-
-    chart.valueAxis.valueMin = 0
-    chart.valueAxis.valueMax = 100
-    chart.valueAxis.valueStep = 20
-
-    # CORRECTED — keep only this
-    chart.bars[0].fillColor = colors.HexColor("#1a2744")
-
-    bar_drawing.add(chart)
-    elements.append(bar_drawing)
-
-else:
-    elements.append(
-        Paragraph(
-            "No domains scored yet — bar chart will appear once assessments begin.",
-            styles["Normal"]
-        )
-    )
-
-elements.append(Spacer(1, 20))
+    scored_sorted = sorted(assessed_cards, key=lambda c: c["average_score"])[:20]
+    if scored_sorted:
+        bar_height = max(90, 16 * len(scored_sorted))
+        bar_drawing = Drawing(420, bar_height + 30)
+        bar_drawing.add(String(0, bar_height + 14, "Domain-wise Average Score (lowest-scoring, up to 20 shown)", fontSize=8, fontName="Helvetica-Bold"))
+        chart = HorizontalBarChart()
+        chart.x = 90
+        chart.y = 10
+        chart.width = 300
+        chart.height = bar_height
+        chart.data = [[c["average_score"] for c in scored_sorted]]
+        chart.categoryAxis.categoryNames = [f"{c['code']} {c['name'][:22]}" for c in scored_sorted]
+        chart.categoryAxis.labels.fontSize = 6
+        chart.valueAxis.valueMin = 0
+        chart.valueAxis.valueMax = 100
+        chart.valueAxis.valueStep = 20
+        chart.bars[0].fillColor = colors.HexColor("#1a2744")
+        for i, c in enumerate(scored_sorted):
+            chart.bars[(0, i)].fillColor = maturity_colors.get(c["maturity"], colors.HexColor("#1a2744"))
+        bar_drawing.add(chart)
+        elements.append(bar_drawing)
+    else:
+        elements.append(Paragraph("No domains scored yet — bar chart will appear once assessments begin.", styles["Normal"]))
+    elements.append(Spacer(1, 20))
 
     elements.append(Paragraph("<b>Open Corrective Actions (CAPA)</b>", styles["Heading2"]))
     if open_actions:
@@ -374,6 +394,79 @@ elements.append(Spacer(1, 20))
         f"tracking of corrective actions, measurable improvement is achievable within the next assessment cycle."
     )
     elements.append(Paragraph(conclusion_txt, styles["Normal"]))
+    elements.append(Spacer(1, 20))
+
+    # ---- Consolidated Findings Register ----
+    elements.append(Paragraph("<b>Consolidated Findings Register</b>", styles["Heading2"]))
+    elements.append(Spacer(1, 4))
+
+    freg_data = [["Code", "Domain", "Score", "Maturity", "Finding"]]
+    for c in cards:
+        freg_data.append([
+            c["code"], c["name"], c["average_score"] if c["average_score"] is not None else "—",
+            c["maturity"], _finding_text(c)
+        ])
+    freg_tbl = Table(freg_data, colWidths=[32, 110, 35, 85, 165], repeatRows=1)
+    freg_style = [
+        ("BACKGROUND", (0, 0), (-1, 0), navy),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTSIZE", (0, 0), (-1, -1), 6.5),
+        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#cccccc")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f6fa")]),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]
+    for i, c in enumerate(cards, start=1):
+        freg_style.append(("BACKGROUND", (3, i), (3, i), maturity_colors.get(c["maturity"], colors.white)))
+    freg_tbl.setStyle(TableStyle(freg_style))
+    elements.append(freg_tbl)
+    elements.append(Spacer(1, 20))
+
+    # ---- Recommendations & 90-Day CAPA Plan ----
+    elements.append(Paragraph("<b>Recommendations &amp; 90-Day CAPA Plan</b>", styles["Heading2"]))
+    elements.append(Spacer(1, 4))
+
+    bucket_30, bucket_60, bucket_90 = [], [], []
+    for a in open_actions:
+        if a.priority == "High":
+            bucket_30.append(a)
+        elif a.priority == "Medium":
+            bucket_60.append(a)
+        else:
+            bucket_90.append(a)
+    # Domains with gaps but no logged action yet also feed the plan, by urgency
+    actioned_codes = {a.domain_code for a in open_actions}
+    for c in critical:
+        if c["code"] not in actioned_codes:
+            bucket_30.append(c)
+    for c in needs_imp:
+        if c["code"] not in actioned_codes:
+            bucket_60.append(c)
+
+    def _row_for(item):
+        if hasattr(item, "priority"):
+            return [item.domain_code, item.title, item.priority, item.status]
+        return [item["code"], f"Log corrective action for {item['name']}", "High" if item in critical else "Medium", "Not Started"]
+
+    capa_data = [["Window", "Domain", "Action / Title", "Priority", "Status"]]
+    for label, bucket in [("0–30 days", bucket_30), ("31–60 days", bucket_60), ("61–90 days", bucket_90)]:
+        if not bucket:
+            capa_data.append([label, "—", "No items in this window", "—", "—"])
+            continue
+        for idx, item in enumerate(bucket):
+            row = _row_for(item)
+            capa_data.append([label if idx == 0 else "", row[0], row[1], row[2], row[3]])
+
+    capa_tbl = Table(capa_data, colWidths=[60, 35, 210, 55, 67], repeatRows=1)
+    capa_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), gold),
+        ("FONTSIZE", (0, 0), (-1, -1), 7),
+        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#cccccc")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+    ]))
+    elements.append(capa_tbl)
 
     # Signature block
     elements.append(Spacer(1, 40))
