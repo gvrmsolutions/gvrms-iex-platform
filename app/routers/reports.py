@@ -330,28 +330,28 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     elements.append(tbl)
     elements.append(Spacer(1, 8))
 
-legend_data = [[
-    Paragraph(
-        f"<font backColor='#f4a3a3'>&nbsp;&nbsp;&nbsp;</font> Critical/Initial",
-        styles["Normal"]
-    ),
-    Paragraph(
-        f"<font backColor='#ffcc99'>&nbsp;&nbsp;&nbsp;</font> Needs Improvement",
-        styles["Normal"]
-    ),
-    Paragraph(
-        f"<font backColor='#fff2a8'>&nbsp;&nbsp;&nbsp;</font> Developing",
-        styles["Normal"]
-    ),
-    Paragraph(
-        f"<font backColor='#b9e6b9'>&nbsp;&nbsp;&nbsp;</font> Proficient",
-        styles["Normal"]
-    ),
-    Paragraph(
-        f"<font backColor='#7fcf7f'>&nbsp;&nbsp;&nbsp;</font> Excellent/Advanced",
-        styles["Normal"]
-    ),
-]]
+    legend_data = [[
+        Paragraph(
+            f"<font backColor='#f4a3a3'>&nbsp;&nbsp;&nbsp;</font> Critical/Initial",
+            styles["Normal"]
+        ),
+        Paragraph(
+            f"<font backColor='#ffcc99'>&nbsp;&nbsp;&nbsp;</font> Needs Improvement",
+            styles["Normal"]
+        ),
+        Paragraph(
+            f"<font backColor='#fff2a8'>&nbsp;&nbsp;&nbsp;</font> Developing",
+            styles["Normal"]
+        ),
+        Paragraph(
+            f"<font backColor='#b9e6b9'>&nbsp;&nbsp;&nbsp;</font> Proficient",
+            styles["Normal"]
+        ),
+        Paragraph(
+            f"<font backColor='#7fcf7f'>&nbsp;&nbsp;&nbsp;</font> Excellent/Advanced",
+            styles["Normal"]
+        ),
+    ]]
 
 legend = Table(
     legend_data,
