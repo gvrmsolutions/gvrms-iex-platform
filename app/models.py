@@ -60,6 +60,7 @@ class Indicator(Base):
     description: Mapped[str] = mapped_column(Text)
     max_score: Mapped[int] = mapped_column(Integer, default=5)
     domain = relationship("Domain", back_populates="indicators")
+    criteria = relationship("IndicatorCriterion")
     __table_args__ = (UniqueConstraint("domain_id", "code", name="uq_domain_indicator"),)
 
 
