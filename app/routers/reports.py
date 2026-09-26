@@ -144,7 +144,9 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     elements = []
 
     logo_path = Path(__file__).resolve().parent.parent / "static" / "assets" / "gvrm_logo.png"
+
 if logo_path.exists():
+    header = Table(
     header = Table(
         [[
             RLImage(str(logo_path), width=65, height=65),
