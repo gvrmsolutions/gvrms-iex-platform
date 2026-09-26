@@ -200,8 +200,20 @@ header.setStyle(TableStyle([
 
     data = [["Code", "Domain", "Avg Score", "Maturity", "Assessed / Total"]]
     for c in cards:
-        data.append([c["code"], c["name"], c["average_score"] if c["average_score"] is not None else "—",
-                     c["maturity"], f"{c['assessed']}/{c['total_indicators']}"])
+        data.append([
+    Paragraph(str(c["code"]), styles["Normal"]),
+    Paragraph(str(c["name"]), styles["Normal"]),
+    Paragraph(
+        str(c["average_score"])
+        if c["average_score"] is not None else "—",
+        styles["Normal"]
+    ),
+    Paragraph(str(c["maturity"]), styles["Normal"]),
+    Paragraph(
+        f"{c['assessed']}/{c['total_indicators']}",
+        styles["Normal"]
+    )
+])
 
     maturity_colors = {
         "Critical / Initial": colors.HexColor("#f4a3a3"),
@@ -337,13 +349,26 @@ tbl_style = [
 
         adata = [["Domain", "Title", "Priority", "Due Date", "Status"]]
         for a in open_actions:
-            adata.append([a.domain_code, a.title, a.priority, str(a.due_date or "—"), a.status])
-        atbl = Table(adata, colWidths=[45, 220, 60, 80, 80])
-        atbl_style = [
-            ("BACKGROUND", (0, 0), (-1, 0), gold),
-            ("FONTSIZE", (0, 0), (-1, -1), 8),
-            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
-        ]
+            aatbl = Table(
+    adata,
+    colWidths=[45, 205, 65, 80, 90],
+    repeatRows=1,
+    hAlign="LEFT"
+)
+
+atbl_style = [
+    ("BACKGROUND", (0, 0), (-1, 0), gold),
+    ("FONTSIZE", (0, 0), (-1, -1), 8),
+    ("LEADING", (0, 0), (-1, -1), 10),
+
+    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+    ("TOPPADDING", (0, 0), (-1, -1), 6),
+    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+
+    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+    ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
+]
         for i, a in enumerate(open_actions, start=1):
             key = _urgency_key(a)
             atbl_style.append(("BACKGROUND", (4, i), (4, i), urgency_colors[key]))
@@ -437,9 +462,16 @@ tbl_style = [
     freg_data = [["Code", "Domain", "Score", "Maturity", "Finding"]]
     for c in cards:
         freg_data.append([
-            c["code"], c["name"], c["average_score"] if c["average_score"] is not None else "—",
-            c["maturity"], _finding_text(c)
-        ])
+    Paragraph(str(c["code"]), styles["Normal"]),
+    Paragraph(str(c["name"]), styles["Normal"]),
+    Paragraph(
+        str(c["average_score"])
+        if c["average_score"] is not None else "—",
+        styles["Normal"]
+    ),
+    Paragraph(str(c["maturity"]), styles["Normal"]),
+    Paragraph(str(_finding_text(c)), styles["Normal"])
+])
     freg_tbl = Table(freg_data, colWidths=[32, 110, 35, 85, 165], repeatRows=1)
     freg_style = [
         ("BACKGROUND", (0, 0), (-1, 0), navy),
@@ -486,11 +518,23 @@ tbl_style = [
     capa_data = [["Window", "Domain", "Action / Title", "Priority", "Status"]]
     for label, bucket in [("0–30 days", bucket_30), ("31–60 days", bucket_60), ("61–90 days", bucket_90)]:
         if not bucket:
-            capa_data.append([label, "—", "No items in this window", "—", "—"])
+            capa_data.append([
+    Paragraph(str(label), styles["Normal"]),
+    Paragraph("—", styles["Normal"]),
+    Paragraph("No items in this window", styles["Normal"]),
+    Paragraph("—", styles["Normal"]),
+    Paragraph("—", styles["Normal"])
+])
             continue
         for idx, item in enumerate(bucket):
             row = _row_for(item)
-            capa_data.append([label if idx == 0 else "", row[0], row[1], row[2], row[3]])
+            capa_data.append([
+    Paragraph(str(label if idx == 0 else ""), styles["Normal"]),
+    Paragraph(str(row[0]), styles["Normal"]),
+    Paragraph(str(row[1]), styles["Normal"]),
+    Paragraph(str(row[2]), styles["Normal"]),
+    Paragraph(str(row[3]), styles["Normal"])
+])
 
     capa_tbl = Table(capa_data, colWidths=[60, 35, 210, 55, 67], repeatRows=1)
     capa_tbl.setStyle(TableStyle([
