@@ -141,7 +141,7 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     navy = colors.HexColor("#07152d")
     gold = colors.HexColor("#c9a24b")
 
-        elements = []
+    elements = []
 
     logo_path = Path(__file__).resolve().parent.parent / "static" / "assets" / "gvrm_logo.png"
     if logo_path.exists():
@@ -199,60 +199,99 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
             styles["Normal"]
         )
     )
-    detail_lines = []
+        detail_lines = []
+
     if org.address:
         detail_lines.append(org.address)
+
     if org.phone:
         detail_lines.append(f"Phone: {org.phone}")
+
     if org.principal_name:
         detail_lines.append(f"Principal: {org.principal_name}")
+
     if org.academic_year:
         detail_lines.append(f"Academic Year: {org.academic_year}")
+
     if org.student_strength:
         detail_lines.append(f"Strength: {org.student_strength}")
+
     if detail_lines:
         elements.append(Spacer(1, 4))
-        elements.append(Paragraph(" &nbsp;|&nbsp; ".join(detail_lines), styles["Normal"]))
+        elements.append(
+            Paragraph(
+                " &nbsp;|&nbsp; ".join(detail_lines),
+                styles["Normal"]
+            )
+        )
 
     elements.append(Spacer(1, 14))
 
-    scored = [c for c in cards if c["average_score"] is not None]
-    overall = round(sum(c["average_score"] for c in scored) / len(scored), 1) if scored else 0
-        elements.append(
+    scored = [
+        c for c in cards
+        if c["average_score"] is not None
+    ]
+
+    overall = (
+        round(
+            sum(c["average_score"] for c in scored) / len(scored),
+            1
+        )
+        if scored else 0
+    )
+
+    elements.append(
         Paragraph(
             f"<b>Overall institutional score: {overall} / 5</b>",
             styles["Heading2"]
         )
     )
-    elements.append(Paragraph(f"Domains assessed: {len(scored)} of {len(cards)} &nbsp;&nbsp; Open corrective actions: {len(open_actions)}", styles["Normal"]))
+
+    elements.append(
+        Paragraph(
+            f"Domains assessed: {len(scored)} of {len(cards)} "
+            f"&nbsp;&nbsp; Open corrective actions: {len(open_actions)}",
+            styles["Normal"]
+        )
+    )
+
     elements.append(Spacer(1, 14))
 
-        data = [["Code", "Domain", "Avg Score", "Maturity", "Assessed / Total"]]
-
-    for c in cards:
+    data = [
+        ["Code", "Domain", "Avg Score", "Maturity", "Assessed / Total"]
+    ]
+        for c in cards:
         data.append([
-            Paragraph(str(c["code"]), styles["Normal"]),
-            Paragraph(str(c["name"]), styles["Normal"]),
+            Paragraph(
+                str(c["code"]),
+                styles["Normal"]
+            ),
+            Paragraph(
+                str(c["name"]),
+                styles["Normal"]
+            ),
             Paragraph(
                 str(c["average_score"])
                 if c["average_score"] is not None else "—",
                 styles["Normal"]
             ),
-            Paragraph(str(c["maturity"]), styles["Normal"]),
+            Paragraph(
+                str(c["maturity"]),
+                styles["Normal"]
+            ),
             Paragraph(
                 f"{c['assessed']}/{c['total_indicators']}",
                 styles["Normal"]
             )
         ])
 
-        maturity_colors = {
+            maturity_colors = {
         "Critical / Initial": colors.HexColor("#f4a3a3"),
         "Needs Improvement": colors.HexColor("#ffcc99"),
         "Developing": colors.HexColor("#fff2a8"),
         "Proficient": colors.HexColor("#b9e6b9"),
         "Excellent / Advanced": colors.HexColor("#7fcf7f"),
     }
-
         tbl = Table(
         data,
         colWidths=[35, 190, 55, 95, 110],
@@ -287,7 +326,6 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
         tbl_style.append(
             ("FONTNAME", (3, i), (3, i), "Helvetica-Bold")
         )
-
     tbl.setStyle(TableStyle(tbl_style))
     elements.append(tbl)
     elements.append(Spacer(1, 8))
