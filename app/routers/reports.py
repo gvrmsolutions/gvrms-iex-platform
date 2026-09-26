@@ -285,7 +285,7 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
             )
         ])
 
-            maturity_colors = {
+        maturity_colors = {
         "Critical / Initial": colors.HexColor("#f4a3a3"),
         "Needs Improvement": colors.HexColor("#ffcc99"),
         "Developing": colors.HexColor("#fff2a8"),
