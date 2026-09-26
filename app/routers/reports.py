@@ -146,13 +146,27 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     logo_path = Path(__file__).resolve().parent.parent / "static" / "assets" / "gvrm_logo.png"
     if logo_path.exists():
         header = Table(
-            [[RLImage(str(logo_path), width=70, height=70),
-              Paragraph(f"<font color='#07152d'><b>{org.name}</b></font><br/>"
-                        f"<font size=9 color='#666666'>Institutional Excellence &amp; Transformation — GVRM Solutions</font>",
-                        styles["Normal"])]],
-            colWidths=[85, 380]
+    [[
+        RLImage(str(logo_path), width=65, height=65),
+        Paragraph(
+            f"<font color='#07152d'><b>{org.name}</b></font><br/>"
+            f"<font size=9 color='#666666'>"
+            f"Institutional Excellence &amp; Transformation — GVRM Solutions"
+            f"</font>",
+            styles["Normal"]
         )
-        header.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+    ]],
+    colWidths=[80, 385],
+    rowHeights=[80]
+)
+
+header.setStyle(TableStyle([
+    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ("LEFTPADDING", (0, 0), (-1, -1), 8),
+    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+    ("TOPPADDING", (0, 0), (-1, -1), 8),
+    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+]))
         elements.append(header)
     else:
         elements.append(Paragraph(f"<font color='#07152d'><b>{org.name}</b></font>", styles["Title"]))
@@ -198,14 +212,34 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
         "Not Assessed": colors.HexColor("#dddddd"),
     }
 
-    tbl = Table(data, colWidths=[35, 210, 60, 100, 80])
-    tbl_style = [
-        ("BACKGROUND", (0, 0), (-1, 0), navy),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f6fa")]),
-    ]
+    tbl = Table(
+    data,
+    colWidths=[35, 190, 55, 95, 110],
+    repeatRows=1,
+    hAlign="LEFT"
+)
+
+tbl_style = [
+    ("BACKGROUND", (0, 0), (-1, 0), navy),
+    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+
+    # Better text spacing
+    ("FONTSIZE", (0, 0), (-1, -1), 8),
+    ("LEADING", (0, 0), (-1, -1), 10),
+
+    # Cell padding
+    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+    ("TOPPADDING", (0, 0), (-1, -1), 6),
+    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+
+    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+
+    ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
+
+    ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+     [colors.white, colors.HexColor("#f5f6fa")]),
+]
     for i, c in enumerate(cards, start=1):
         cell_color = maturity_colors.get(c["maturity"], colors.white)
         tbl_style.append(("BACKGROUND", (3, i), (3, i), cell_color))
