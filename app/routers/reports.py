@@ -147,9 +147,12 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
 
 if logo_path.exists():
     header = Table(
-    header = Table(
         [[
-            RLImage(str(logo_path), width=65, height=65),
+            RLImage(
+                str(logo_path),
+                width=65,
+                height=65
+            ),
             Paragraph(
                 f"<font color='#07152d'><b>{org.name}</b></font><br/>"
                 f"<font size=9 color='#666666'>"
@@ -162,13 +165,15 @@ if logo_path.exists():
         rowHeights=[80]
     )
 
-    header.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-    ]))
+    header.setStyle(
+        TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ])
+    )
 
     elements.append(header)
 
@@ -179,10 +184,19 @@ else:
             styles["Title"]
         )
     )
-    elements.append(Spacer(1, 10))
-    elements.append(Paragraph("Institutional Excellence — Audit Report (A-Z, 52-Domain Framework)", styles["Heading3"]))
-    elements.append(Paragraph(f"Generated: {datetime.utcnow().strftime('%d %b %Y, %H:%M UTC')}", styles["Normal"]))
-
+  elements.append(Spacer(1, 10))
+elements.append(
+    Paragraph(
+        "Institutional Excellence — Audit Report (A-Z, 52-Domain Framework)",
+        styles["Heading3"]
+    )
+)
+elements.append(
+    Paragraph(
+        f"Generated: {datetime.utcnow().strftime('%d %b %Y, %H:%M UTC')}",
+        styles["Normal"]
+    )
+)
     detail_lines = []
     if org.address:
         detail_lines.append(org.address)
