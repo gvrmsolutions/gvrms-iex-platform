@@ -258,13 +258,15 @@ tbl_style = [
     ("ROWBACKGROUNDS", (0, 1), (-1, -1),
      [colors.white, colors.HexColor("#f5f6fa")]),
 ]
-    for i, c in enumerate(cards, start=1):
-        cell_color = maturity_colors.get(c["maturity"], colors.white)
-        tbl_style.append(("BACKGROUND", (3, i), (3, i), cell_color))
-        tbl_style.append(("FONTNAME", (3, i), (3, i), "Helvetica-Bold"))
-    tbl.setStyle(TableStyle(tbl_style))
-    elements.append(tbl)
-    elements.append(Spacer(1, 8))
+
+for i, c in enumerate(cards, start=1):
+    cell_color = maturity_colors.get(c["maturity"], colors.white)
+    tbl_style.append(("BACKGROUND", (3, i), (3, i), cell_color))
+    tbl_style.append(("FONTNAME", (3, i), (3, i), "Helvetica-Bold"))
+
+tbl.setStyle(TableStyle(tbl_style))
+elements.append(tbl)
+elements.append(Spacer(1, 8))
 
     legend_data = [[
         Paragraph(f"<font backColor='#f4a3a3'>&nbsp;&nbsp;&nbsp;</font> Critical/Initial", styles["Normal"]),
