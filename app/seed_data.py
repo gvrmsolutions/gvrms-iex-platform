@@ -1,5 +1,5 @@
 from .db import SessionLocal, Base, engine
-from .models import Domain, Indicator, Organization, User
+from .models import Domain, Indicator, IndicatorCriterion, Organization, User
 from .security import hash_password
 
 # A-Z, 52 critical-domain framework: each letter split into two focused
