@@ -79,18 +79,20 @@ def run_seed():
                     "Gap Identification",
                     "Corrective / Improvement Action"
                 ], 1):
-                    db.add(Indicator(
+                                        db.add(Indicator(
                         domain_id=d.id,
                         code=f"{code}{n:02d}",
                         title=f"{name} — {title}",
                         description=f"Assess the institution's {title.lower()} for {name}.",
                         max_score=100
                     ))
-                                # Create 5 checklist criteria for each indicator
+
+            # Create 5 checklist criteria for each indicator
             indicators = db.query(Indicator).filter(
                 Indicator.domain_id == d.id
             ).all()
-                        for indicator in indicators:
+
+            for indicator in indicators:
                 existing = db.query(IndicatorCriterion).filter(
                     IndicatorCriterion.indicator_id == indicator.id
                 ).count()
