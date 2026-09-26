@@ -90,6 +90,26 @@ def run_seed():
             indicators = db.query(Indicator).filter(
                 Indicator.domain_id == d.id
             ).all()
+                        for indicator in indicators:
+                existing = db.query(IndicatorCriterion).filter(
+                    IndicatorCriterion.indicator_id == indicator.id
+                ).count()
+
+                if existing == 0:
+                    criteria = [
+                        f"{name} requirement is formally documented",
+                        f"{name} process is clearly defined and communicated",
+                        f"{name} is implemented in practice",
+                        f"Records and supporting evidence for {name} are maintained",
+                        f"{name} is reviewed and improved periodically"
+                    ]
+
+                    for criterion_no, criterion_text in enumerate(criteria, 1):
+                        db.add(IndicatorCriterion(
+                            indicator_id=indicator.id,
+                            criterion_no=criterion_no,
+                            criterion_text=criterion_text
+                        ))
 
             for indicator in indicators:
                 existing = db.query(IndicatorCriterion).filter(
