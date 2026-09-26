@@ -745,26 +745,63 @@ function openAssess(indicator){
 async function submitAssessment(){
   const errEl = document.getElementById('assessErr');
   errEl.classList.add('hidden');
-  try{
-    const result = await api('/api/assessments', {method:'POST', body: JSON.stringify({
-      indicator_id: currentIndicator.id,
-      criteria_met: parseInt(document.getElementById('assessCriteria').value, 10),
-      observation: document.getElementById('assessObs').value
-    })});
-    const file = document.getElementById('assessEvidenceFile').files[0];
-    if(file){
-      const fd = new FormData();
-      fd.append('file', file);
-      await fetch('/api/evidence/upload?assessment_id=' + result.id, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-        body: fd
-      });
-    }
-    await openDomain(currentDomainCode);
-  }catch(e){ errEl.textContent = e.message; errEl.classList.remove('hidden'); }
-}
 
+  try{
+
+    // Automatically count checked checklist criteria
+    const checkedCriteria = document.querySelectorAll(
+      '.assessment-check:checked'
+    ).length;
+
+    // Update displayed count
+    document.getElementById('criteriaCount').textContent =
+      checkedCriteria + ' / 5';
+
+    // Store automatic count
+    document.getElementById('assessCriteria').value =
+      checkedCriteria;
+
+    const result = await api('/api/assessments', {
+      method: 'POST',
+      body: JSON.stringify({
+        indicator_id: currentIndicator.id,
+        criteria_met: checkedCriteria,
+        observation: document.getElementById('assessObs').value
+      })
+    });
+
+    // Upload evidence if selected
+    const file = document.getElementById(
+      'assessEvidenceFile'
+    ).files[0];
+
+    if(file){
+
+      const fd = new FormData();
+
+      fd.append('file', file);
+
+      await fetch(
+        '/api/evidence/upload?assessment_id=' + result.id,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token
+          },
+          body: fd
+        }
+      );
+    }
+
+    await openDomain(currentDomainCode);
+
+  }catch(e){
+
+    errEl.textContent = e.message;
+    errEl.classList.remove('hidden');
+
+  }
+}
 function actionUrgency(priority, createdAt, status){
   if(status === 'Completed') return {cls:'status-done', label:'Completed'};
   const slaDays = {High:1, Medium:30, Low:90}[priority] || 30;
