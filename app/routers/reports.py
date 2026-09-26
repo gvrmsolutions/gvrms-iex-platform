@@ -353,10 +353,18 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
         ),
     ]]
 
-legend = Table(
-    legend_data,
-    colWidths=[95, 105, 85, 80, 105]
-)
+    legend = Table(
+        legend_data,
+        colWidths=[95, 105, 85, 80, 105]
+    )
+
+    legend.setStyle(TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 7),
+        ("TOPPADDING", (0, 0), (-1, -1), 2)
+    ]))
+
+    elements.append(legend)
+    elements.append(Spacer(1, 20))
 
 legend.setStyle(TableStyle([
     ("FONTSIZE", (0, 0), (-1, -1), 7),
