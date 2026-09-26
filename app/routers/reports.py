@@ -424,7 +424,7 @@ tbl_style = [
     elements.append(Paragraph("<b>Conclusion</b>", styles["Heading2"]))
     conclusion_txt = (
         f"The institution is currently at {overall_band} stage of institutional excellence "
-        f"({overall}/100 overall). With focused attention on the domains flagged above and consistent "
+        f"({overall}/5 overall). With focused attention on the domains flagged above and consistent "
         f"tracking of corrective actions, measurable improvement is achievable within the next assessment cycle."
     )
     elements.append(Paragraph(conclusion_txt, styles["Normal"]))
