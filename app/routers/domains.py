@@ -18,12 +18,27 @@ def domains(db: Session = Depends(get_db), user=Depends(current_user)):
 @router.get("/{code}")
 def domain_detail(code: str, db: Session = Depends(get_db), user=Depends(current_user)):
     d = db.query(Domain).filter(Domain.code == code.upper()).first()
+
     if not d:
         raise HTTPException(404, "Domain not found")
+
     return {
-        "code": d.code, "name": d.name, "description": d.description,
+        "code": d.code,
+        "name": d.name,
+        "description": d.description,
+
         "indicators": [{
-            "id": i.id, "code": i.code, "title": i.title,
-            "description": i.description, "max_score": i.max_score
+            "id": i.id,
+            "code": i.code,
+            "title": i.title,
+            "description": i.description,
+            "max_score": i.max_score,
+
+            "criteria": [{
+                "id": c.id,
+                "criterion_no": c.criterion_no,
+                "criterion_text": c.criterion_text
+            } for c in i.criteria]
+
         } for i in d.indicators]
     }
