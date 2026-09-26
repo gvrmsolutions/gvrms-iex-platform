@@ -145,33 +145,38 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
 
     logo_path = Path(__file__).resolve().parent.parent / "static" / "assets" / "gvrm_logo.png"
     if logo_path.exists():
-        header = Table(
-    [[
-        RLImage(str(logo_path), width=65, height=65),
-        Paragraph(
-            f"<font color='#07152d'><b>{org.name}</b></font><br/>"
-            f"<font size=9 color='#666666'>"
-            f"Institutional Excellence &amp; Transformation — GVRM Solutions"
-            f"</font>",
-            styles["Normal"]
-        )
-    ]],
-    colWidths=[80, 385],
-    rowHeights=[80]
-)
+    header = Table(
+        [[
+            RLImage(str(logo_path), width=65, height=65),
+            Paragraph(
+                f"<font color='#07152d'><b>{org.name}</b></font><br/>"
+                f"<font size=9 color='#666666'>"
+                f"Institutional Excellence &amp; Transformation — GVRM Solutions"
+                f"</font>",
+                styles["Normal"]
+            )
+        ]],
+        colWidths=[80, 385],
+        rowHeights=[80]
+    )
 
-header.setStyle(TableStyle([
-    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-    ("LEFTPADDING", (0, 0), (-1, -1), 8),
-    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-    ("TOPPADDING", (0, 0), (-1, -1), 8),
-    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-]))
+    header.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
 
-elements.append(header)
+    elements.append(header)
+
 else:
-        elements.append(Paragraph(f"<font color='#07152d'><b>{org.name}</b></font>", styles["Title"]))
-
+    elements.append(
+        Paragraph(
+            f"<font color='#07152d'><b>{org.name}</b></font>",
+            styles["Title"]
+        )
+    )
     elements.append(Spacer(1, 10))
     elements.append(Paragraph("Institutional Excellence — Audit Report (A-Z, 52-Domain Framework)", styles["Heading3"]))
     elements.append(Paragraph(f"Generated: {datetime.utcnow().strftime('%d %b %Y, %H:%M UTC')}", styles["Normal"]))
