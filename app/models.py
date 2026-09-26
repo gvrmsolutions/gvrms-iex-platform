@@ -62,6 +62,15 @@ class Indicator(Base):
     domain = relationship("Domain", back_populates="indicators")
     __table_args__ = (UniqueConstraint("domain_id", "code", name="uq_domain_indicator"),)
 
+
+class IndicatorCriterion(Base):
+    __tablename__ = "indicator_criteria"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    indicator_id: Mapped[int] = mapped_column(ForeignKey("indicators.id"))
+    criterion_no: Mapped[int] = mapped_column(Integer)
+    criterion_text: Mapped[str] = mapped_column(Text)
+    
 class Assessment(Base):
     __tablename__ = "assessments"
     id: Mapped[int] = mapped_column(primary_key=True)
