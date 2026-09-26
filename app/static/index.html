@@ -198,36 +198,12 @@
 
 <div id="assessmentChecklist" style="margin:10px 0;">
 
-  <label style="display:block;margin:8px 0;">
-    <input type="checkbox" class="assessment-check">
-    Curriculum / teaching policy is documented
-  </label>
-
-  <label style="display:block;margin:8px 0;">
-    <input type="checkbox" class="assessment-check">
-    Teaching-learning process is clearly defined
-  </label>
-
-  <label style="display:block;margin:8px 0;">
-    <input type="checkbox" class="assessment-check">
-    Process is implemented in practice
-  </label>
-
-  <label style="display:block;margin:8px 0;">
-    <input type="checkbox" class="assessment-check">
-    Records / supporting evidence are maintained
-  </label>
-
-  <label style="display:block;margin:8px 0;">
-    <input type="checkbox" class="assessment-check">
-    Process is reviewed and improved periodically
-  </label>
 
 </div>
 
 <div style="margin:10px 0;padding:10px;background:#f3f4f6;border-radius:6px;">
   <b>Criteria Met:</b>
-  <span id="criteriaCount">0 / 5</span>
+  <span id="criteriaCount">0 / 0</span>
 </div>
 
 <input type="hidden" id="assessCriteria" value="0">
@@ -789,8 +765,12 @@ async function submitAssessment(){
     ).length;
 
     // Update displayed count
-    document.getElementById('criteriaCount').textContent =
-      checkedCriteria + ' / 5';
+const totalCriteria = document.querySelectorAll(
+  '.assessment-check'
+).length;
+
+document.getElementById('criteriaCount').textContent =
+  checkedCriteria + ' / ' + totalCriteria;
 
     // Store automatic count
     document.getElementById('assessCriteria').value =
