@@ -336,290 +336,562 @@ dist_counts = [
     for m in dist_order
 ]
 
-    pie_drawing = Drawing(240, 170)
-    pie = Pie()
-    pie.x = 15
-    pie.y = 15
-    pie.width = 130
-    pie.height = 130
-    pie.data = [max(v, 0.0001) for v in dist_counts]
-    pie.labels = [f"{m.split(' / ')[0]} ({v})" for m, v in zip(dist_order, dist_counts)]
-    pie.simpleLabels = 0
-    pie.sideLabels = 1
-    for i, c in enumerate(dist_colors):
-        pie.slices[i].fillColor = c
-        pie.slices[i].fontSize = 6
-    pie_drawing.add(pie)
-    pie_drawing.add(String(15, 158, "Maturity Distribution (52 Domains)", fontSize=8, fontName="Helvetica-Bold"))
-    elements.append(pie_drawing)
-    elements.append(Spacer(1, 10))
+pie_drawing = Drawing(240, 170)
+pie = Pie()
+pie.x = 15
+pie.y = 15
+pie.width = 130
+pie.height = 130
+pie.data = [max(v, 0.0001) for v in dist_counts]
+pie.labels = [
+    f"{m.split(' / ')[0]} ({v})"
+    for m, v in zip(dist_order, dist_counts)
+]
+pie.simpleLabels = 0
+pie.sideLabels = 1
 
-    scored_sorted = sorted(assessed_cards, key=lambda c: c["average_score"])[:20]
-    if scored_sorted:
-        bar_height = max(90, 16 * len(scored_sorted))
-        bar_drawing = Drawing(420, bar_height + 30)
-        bar_drawing.add(String(0, bar_height + 14, "Domain-wise Average Score (lowest-scoring, up to 20 shown)", fontSize=8, fontName="Helvetica-Bold"))
-        chart = HorizontalBarChart()
-        chart.x = 90
-        chart.y = 10
-        chart.width = 300
-        chart.height = bar_height
-        chart.data = [[c["average_score"] for c in scored_sorted]]
-        chart.categoryAxis.categoryNames = [f"{c['code']} {c['name'][:22]}" for c in scored_sorted]
-        chart.categoryAxis.labels.fontSize = 6
-        chart.valueAxis.valueMin = 0
-        chart.valueAxis.valueMax = 100
-        chart.valueAxis.valueStep = 20
-        chart.bars[0].fillColor = colors.HexColor("#1a2744")
-        for i, c in enumerate(scored_sorted):
-            chart.bars[(0, i)].fillColor = maturity_colors.get(c["maturity"], colors.HexColor("#1a2744"))
-        bar_drawing.add(chart)
-        elements.append(bar_drawing)
-    else:
-        elements.append(Paragraph("No domains scored yet — bar chart will appear once assessments begin.", styles["Normal"]))
-    elements.append(Spacer(1, 20))
+for i, c in enumerate(dist_colors):
+    pie.slices[i].fillColor = c
+    pie.slices[i].fontSize = 6
 
-    elements.append(Paragraph("<b>Open Corrective Actions (CAPA)</b>", styles["Heading2"]))
-    if open_actions:
-        from datetime import datetime as _dt
-        sla_days_map = {"High": 1, "Medium": 30, "Low": 90}
-        urgency_colors = {
-            "done": colors.HexColor("#b9e6b9"),
-            "ontrack": colors.HexColor("#c8e6c9"),
-            "duesoon": colors.HexColor("#ffe6a8"),
-            "overdue": colors.HexColor("#f4a3a3"),
-        }
+pie_drawing.add(pie)
+pie_drawing.add(
+    String(
+        15, 158,
+        "Maturity Distribution (52 Domains)",
+        fontSize=8,
+        fontName="Helvetica-Bold"
+    )
+)
+elements.append(pie_drawing)
+elements.append(Spacer(1, 10))
 
-        def _urgency_key(a):
-            if a.status == "Completed":
-                return "done"
-            sla = sla_days_map.get(a.priority, 30)
-            elapsed = (_dt.utcnow() - a.created_at).total_seconds() / 86400
-            if elapsed > sla:
-                return "overdue"
-            if elapsed > sla * 0.7:
-                return "duesoon"
-            return "ontrack"
+scored_sorted = sorted(
+    assessed_cards,
+    key=lambda c: c["average_score"]
+)[:20]
 
-        adata = [["Domain", "Title", "Priority", "Due Date", "Status"]]
-        for a in open_actions:
-            aatbl = Table(
-    adata,
-    colWidths=[45, 205, 65, 80, 90],
-    repeatRows=1,
-    hAlign="LEFT"
+if scored_sorted:
+    bar_height = max(90, 16 * len(scored_sorted))
+    bar_drawing = Drawing(420, bar_height + 30)
+
+    bar_drawing.add(
+        String(
+            0,
+            bar_height + 14,
+            "Domain-wise Average Score (lowest-scoring, up to 20 shown)",
+            fontSize=8,
+            fontName="Helvetica-Bold"
+        )
+    )
+
+    chart = HorizontalBarChart()
+    chart.x = 90
+    chart.y = 10
+    chart.width = 300
+    chart.height = bar_height
+    chart.data = [[c["average_score"] for c in scored_sorted]]
+    chart.categoryAxis.categoryNames = [
+        f"{c['code']} {c['name'][:22]}"
+        for c in scored_sorted
+    ]
+    chart.categoryAxis.labels.fontSize = 6
+    chart.valueAxis.valueMin = 0
+    chart.valueAxis.valueMax = 5
+    chart.valueAxis.valueStep = 1
+    chart.bars[0].fillColor = colors.HexColor("#1a2744")
+
+    for i, c in enumerate(scored_sorted):
+        chart.bars[(0, i)].fillColor = maturity_colors.get(
+            c["maturity"],
+            colors.HexColor("#1a2744")
+        )
+
+    bar_drawing.add(chart)
+    elements.append(bar_drawing)
+
+else:
+    elements.append(
+        Paragraph(
+            "No domains scored yet — bar chart will appear once assessments begin.",
+            styles["Normal"]
+        )
+    )
+
+elements.append(Spacer(1, 20))
+
+elements.append(
+    Paragraph(
+        "<b>Open Corrective Actions (CAPA)</b>",
+        styles["Heading2"]
+    )
 )
 
-atbl_style = [
-    ("BACKGROUND", (0, 0), (-1, 0), gold),
-    ("FONTSIZE", (0, 0), (-1, -1), 8),
-    ("LEADING", (0, 0), (-1, -1), 10),
+if open_actions:
+    from datetime import datetime as _dt
 
-    ("LEFTPADDING", (0, 0), (-1, -1), 6),
-    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-    ("TOPPADDING", (0, 0), (-1, -1), 6),
-    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    sla_days_map = {
+        "High": 1,
+        "Medium": 30,
+        "Low": 90
+    }
 
-    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-    ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
-]
-        for i, a in enumerate(open_actions, start=1):
-            key = _urgency_key(a)
-            atbl_style.append(("BACKGROUND", (4, i), (4, i), urgency_colors[key]))
-            atbl_style.append(("FONTNAME", (4, i), (4, i), "Helvetica-Bold"))
-        atbl.setStyle(TableStyle(atbl_style))
-        elements.append(atbl)
-        elements.append(Spacer(1, 6))
-        action_legend = Table([[
-            Paragraph("<font backColor='#f4a3a3'>&nbsp;&nbsp;&nbsp;</font> Overdue to start", styles["Normal"]),
-            Paragraph("<font backColor='#ffe6a8'>&nbsp;&nbsp;&nbsp;</font> Due soon", styles["Normal"]),
-            Paragraph("<font backColor='#c8e6c9'>&nbsp;&nbsp;&nbsp;</font> On track", styles["Normal"]),
-            Paragraph("<font backColor='#b9e6b9'>&nbsp;&nbsp;&nbsp;</font> Completed", styles["Normal"]),
-        ]], colWidths=[110, 90, 90, 90])
-        action_legend.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 7), ("TOPPADDING", (0, 0), (-1, -1), 2)]))
-        elements.append(action_legend)
-    else:
-        elements.append(Paragraph("No open corrective actions.", styles["Normal"]))
+    urgency_colors = {
+        "done": colors.HexColor("#b9e6b9"),
+        "ontrack": colors.HexColor("#c8e6c9"),
+        "duesoon": colors.HexColor("#ffe6a8"),
+        "overdue": colors.HexColor("#f4a3a3"),
+    }
 
-    # ---- Overall Assessment Summary / Consultant's Observations & Suggestions / Conclusion ----
-    elements.append(Spacer(1, 20))
-    elements.append(Paragraph("<b>Overall Assessment Summary</b>", styles["Heading2"]))
+    def _urgency_key(a):
+        if a.status == "Completed":
+            return "done"
 
-    total_domains = len(cards)
-    not_assessed = [c for c in cards if c["average_score"] is None]
-    critical = [c for c in assessed_cards if c["maturity"] == "Critical / Initial"]
-    needs_imp = [c for c in assessed_cards if c["maturity"] == "Needs Improvement"]
-    strong = [c for c in assessed_cards if c["maturity"] in ("Proficient", "Excellent / Advanced")]
-    weakest = sorted(assessed_cards, key=lambda c: c["average_score"])[:3]
-
-    overall_band = (
-        "an early / critical" if overall < 40 else
-        "a developing" if overall < 60 else
-        "a moderately mature" if overall < 75 else
-        "a proficient" if overall < 90 else
-        "an excellent"
-    )
-
-    summary_txt = (
-        f"Out of the 52-domain institutional excellence framework, {len(assessed_cards)} domain(s) have been "
-        f"assessed so far and {len(not_assessed)} remain pending. The overall institutional score stands at "
-        f"{overall}/5, placing the institution at {overall_band} stage of readiness. "
-        f"{len(critical)} domain(s) fall in the Critical/Initial band, {len(needs_imp)} need improvement, and "
-        f"{len(strong)} are already at a Proficient or Excellent level. There are currently {len(open_actions)} "
-        f"open corrective action(s) being tracked."
-    )
-    elements.append(Paragraph(summary_txt, styles["Normal"]))
-    elements.append(Spacer(1, 12))
-
-    elements.append(Paragraph("<b>Consultant's Observations</b>", styles["Heading2"]))
-    if weakest:
-        weak_list = ", ".join(f"{c['code']} ({c['name']}, {c['average_score']})" for c in weakest)
-        obs_txt = (
-            f"The areas needing the most immediate attention are {weak_list}. "
-            f"These domains score below the institutional average and reflect gaps in documentation, "
-            f"process consistency, or review cadence rather than a single point failure."
+        sla = sla_days_map.get(a.priority, 30)
+        elapsed = (
+            (_dt.utcnow() - a.created_at).total_seconds()
+            / 86400
         )
-    else:
-        obs_txt = "No domains have been scored yet; observations will populate once assessments begin."
-    elements.append(Paragraph(obs_txt, styles["Normal"]))
-    elements.append(Spacer(1, 12))
 
-    elements.append(Paragraph("<b>Suggestions</b>", styles["Heading2"]))
-    suggestions = []
-    if not_assessed:
-        suggestions.append(f"Prioritize assessing the {len(not_assessed)} pending domain(s) to get a complete institutional picture.")
-    if critical:
-        suggestions.append(f"Open corrective actions for all {len(critical)} Critical/Initial domain(s) if not already logged, with High priority and near-term due dates.")
-    if needs_imp:
-        suggestions.append(f"Schedule a structured review cycle for the {len(needs_imp)} 'Needs Improvement' domain(s) over the next quarter.")
-    if not open_actions and (critical or needs_imp):
-        suggestions.append("No corrective actions are currently open despite existing gaps — logging actions will help track closure.")
-    if not suggestions:
-        suggestions.append("Maintain the current review cadence and continue periodic re-assessment to sustain the institution's maturity level.")
-    for s in suggestions:
-        elements.append(Paragraph(f"• {s}", styles["Normal"]))
-    elements.append(Spacer(1, 12))
+        if elapsed > sla:
+            return "overdue"
 
-    elements.append(Paragraph("<b>Conclusion</b>", styles["Heading2"]))
-    conclusion_txt = (
-        f"The institution is currently at {overall_band} stage of institutional excellence "
-        f"({overall}/5 overall). With focused attention on the domains flagged above and consistent "
-        f"tracking of corrective actions, measurable improvement is achievable within the next assessment cycle."
-    )
-    elements.append(Paragraph(conclusion_txt, styles["Normal"]))
-    elements.append(Spacer(1, 20))
+        if elapsed > sla * 0.7:
+            return "duesoon"
 
-    # ---- Consolidated Findings Register ----
-    elements.append(Paragraph("<b>Consolidated Findings Register</b>", styles["Heading2"]))
-    elements.append(Spacer(1, 4))
+        return "ontrack"
 
-    freg_data = [["Code", "Domain", "Score", "Maturity", "Finding"]]
-    for c in cards:
-        freg_data.append([
-    Paragraph(str(c["code"]), styles["Normal"]),
-    Paragraph(str(c["name"]), styles["Normal"]),
-    Paragraph(
-        str(c["average_score"])
-        if c["average_score"] is not None else "—",
-        styles["Normal"]
-    ),
-    Paragraph(str(c["maturity"]), styles["Normal"]),
-    Paragraph(str(_finding_text(c)), styles["Normal"])
-])
-    freg_tbl = Table(freg_data, colWidths=[32, 110, 35, 85, 165], repeatRows=1)
-    freg_style = [
-        ("BACKGROUND", (0, 0), (-1, 0), navy),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTSIZE", (0, 0), (-1, -1), 6.5),
-        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#cccccc")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f6fa")]),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]
-    for i, c in enumerate(cards, start=1):
-        freg_style.append(("BACKGROUND", (3, i), (3, i), maturity_colors.get(c["maturity"], colors.white)))
-    freg_tbl.setStyle(TableStyle(freg_style))
-    elements.append(freg_tbl)
-    elements.append(Spacer(1, 20))
+    adata = [[
+        "Domain",
+        "Title",
+        "Priority",
+        "Due Date",
+        "Status"
+    ]]
 
-    # ---- Recommendations & 90-Day CAPA Plan ----
-    elements.append(Paragraph("<b>Recommendations &amp; 90-Day CAPA Plan</b>", styles["Heading2"]))
-    elements.append(Spacer(1, 4))
-
-    bucket_30, bucket_60, bucket_90 = [], [], []
     for a in open_actions:
-        if a.priority == "High":
-            bucket_30.append(a)
-        elif a.priority == "Medium":
-            bucket_60.append(a)
-        else:
-            bucket_90.append(a)
-    # Domains with gaps but no logged action yet also feed the plan, by urgency
-    actioned_codes = {a.domain_code for a in open_actions}
-    for c in critical:
-        if c["code"] not in actioned_codes:
-            bucket_30.append(c)
-    for c in needs_imp:
-        if c["code"] not in actioned_codes:
-            bucket_60.append(c)
+        adata.append([
+            Paragraph(str(a.domain_code), styles["Normal"]),
+            Paragraph(str(a.title), styles["Normal"]),
+            Paragraph(str(a.priority), styles["Normal"]),
+            Paragraph(str(a.due_date or "—"), styles["Normal"]),
+            Paragraph(str(a.status), styles["Normal"])
+        ])
 
-    def _row_for(item):
-        if hasattr(item, "priority"):
-            return [item.domain_code, item.title, item.priority, item.status]
-        return [item["code"], f"Log corrective action for {item['name']}", "High" if item in critical else "Medium", "Not Started"]
+    atbl = Table(
+        adata,
+        colWidths=[45, 205, 65, 80, 90],
+        repeatRows=1,
+        hAlign="LEFT"
+    )
 
-    capa_data = [["Window", "Domain", "Action / Title", "Priority", "Status"]]
-    for label, bucket in [("0–30 days", bucket_30), ("31–60 days", bucket_60), ("61–90 days", bucket_90)]:
-        if not bucket:
-            capa_data.append([
-    Paragraph(str(label), styles["Normal"]),
-    Paragraph("—", styles["Normal"]),
-    Paragraph("No items in this window", styles["Normal"]),
-    Paragraph("—", styles["Normal"]),
-    Paragraph("—", styles["Normal"])
-])
-            continue
-        for idx, item in enumerate(bucket):
-            row = _row_for(item)
-            capa_data.append([
-    Paragraph(str(label if idx == 0 else ""), styles["Normal"]),
-    Paragraph(str(row[0]), styles["Normal"]),
-    Paragraph(str(row[1]), styles["Normal"]),
-    Paragraph(str(row[2]), styles["Normal"]),
-    Paragraph(str(row[3]), styles["Normal"])
-])
+    atbl_style = [
+        ("BACKGROUND", (0, 0), (-1, 0), gold),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("LEADING", (0, 0), (-1, -1), 10),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
+    ]
 
-    capa_tbl = Table(capa_data, colWidths=[60, 35, 210, 55, 67], repeatRows=1)
-    capa_tbl.setStyle(TableStyle([
+    for i, a in enumerate(open_actions, start=1):
+        key = _urgency_key(a)
+        atbl_style.append(
+            ("BACKGROUND", (4, i), (4, i), urgency_colors[key])
+        )
+        atbl_style.append(
+            ("FONTNAME", (4, i), (4, i), "Helvetica-Bold")
+        )
+
+    atbl.setStyle(TableStyle(atbl_style))
+    elements.append(atbl)
+    elements.append(Spacer(1, 6))
+
+    action_legend = Table([[
+        Paragraph(
+            "<font backColor='#f4a3a3'>&nbsp;&nbsp;&nbsp;</font> Overdue to start",
+            styles["Normal"]
+        ),
+        Paragraph(
+            "<font backColor='#ffe6a8'>&nbsp;&nbsp;&nbsp;</font> Due soon",
+            styles["Normal"]
+        ),
+        Paragraph(
+            "<font backColor='#c8e6c9'>&nbsp;&nbsp;&nbsp;</font> On track",
+            styles["Normal"]
+        ),
+        Paragraph(
+            "<font backColor='#b9e6b9'>&nbsp;&nbsp;&nbsp;</font> Completed",
+            styles["Normal"]
+        ),
+    ]], colWidths=[110, 90, 90, 90])
+
+    action_legend.setStyle(
+        TableStyle([
+            ("FONTSIZE", (0, 0), (-1, -1), 7),
+            ("TOPPADDING", (0, 0), (-1, -1), 2)
+        ])
+    )
+
+    elements.append(action_legend)
+
+else:
+    elements.append(
+        Paragraph(
+            "No open corrective actions.",
+            styles["Normal"]
+        )
+    )
+
+# ---- Overall Assessment Summary / Consultant's Observations & Suggestions / Conclusion ----
+elements.append(Spacer(1, 20))
+elements.append(
+    Paragraph(
+        "<b>Overall Assessment Summary</b>",
+        styles["Heading2"]
+    )
+)
+
+total_domains = len(cards)
+not_assessed = [
+    c for c in cards
+    if c["average_score"] is None
+]
+
+critical = [
+    c for c in assessed_cards
+    if c["maturity"] == "Critical / Initial"
+]
+
+needs_imp = [
+    c for c in assessed_cards
+    if c["maturity"] == "Needs Improvement"
+]
+
+strong = [
+    c for c in assessed_cards
+    if c["maturity"] in (
+        "Proficient",
+        "Excellent / Advanced"
+    )
+]
+
+weakest = sorted(
+    assessed_cards,
+    key=lambda c: c["average_score"]
+)[:3]
+
+overall_band = (
+    "an early / critical" if overall < 2 else
+    "a developing" if overall < 3 else
+    "a moderately mature" if overall < 3.5 else
+    "a proficient" if overall < 4.5 else
+    "an excellent"
+)
+
+summary_txt = (
+    f"Out of the 52-domain institutional excellence framework, "
+    f"{len(assessed_cards)} domain(s) have been assessed so far and "
+    f"{len(not_assessed)} remain pending. The overall institutional "
+    f"score stands at {overall}/5, placing the institution at "
+    f"{overall_band} stage of readiness. "
+    f"{len(critical)} domain(s) fall in the Critical/Initial band, "
+    f"{len(needs_imp)} need improvement, and {len(strong)} are "
+    f"already at a Proficient or Excellent level. There are currently "
+    f"{len(open_actions)} open corrective action(s) being tracked."
+)
+
+elements.append(
+    Paragraph(summary_txt, styles["Normal"])
+)
+elements.append(Spacer(1, 12))
+
+elements.append(
+    Paragraph(
+        "<b>Consultant's Observations</b>",
+        styles["Heading2"]
+    )
+)
+
+if weakest:
+    weak_list = ", ".join(
+        f"{c['code']} ({c['name']}, {c['average_score']})"
+        for c in weakest
+    )
+
+    obs_txt = (
+        f"The areas needing the most immediate attention are "
+        f"{weak_list}. These domains score below the institutional "
+        f"average and reflect gaps in documentation, process "
+        f"consistency, or review cadence rather than a single point failure."
+    )
+
+else:
+    obs_txt = (
+        "No domains have been scored yet; observations will populate "
+        "once assessments begin."
+    )
+
+elements.append(
+    Paragraph(obs_txt, styles["Normal"])
+)
+elements.append(Spacer(1, 12))
+
+elements.append(
+    Paragraph(
+        "<b>Suggestions</b>",
+        styles["Heading2"]
+    )
+)
+
+suggestions = []
+
+if not_assessed:
+    suggestions.append(
+        f"Prioritize assessing the {len(not_assessed)} pending domain(s) "
+        f"to get a complete institutional picture."
+    )
+
+if critical:
+    suggestions.append(
+        f"Open corrective actions for all {len(critical)} Critical/Initial "
+        f"domain(s) if not already logged, with High priority and "
+        f"near-term due dates."
+    )
+
+if needs_imp:
+    suggestions.append(
+        f"Schedule a structured review cycle for the "
+        f"{len(needs_imp)} 'Needs Improvement' domain(s) over the next quarter."
+    )
+
+if not open_actions and (critical or needs_imp):
+    suggestions.append(
+        "No corrective actions are currently open despite existing gaps — "
+        "logging actions will help track closure."
+    )
+
+if not suggestions:
+    suggestions.append(
+        "Maintain the current review cadence and continue periodic "
+        "re-assessment to sustain the institution's maturity level."
+    )
+
+for s in suggestions:
+    elements.append(
+        Paragraph(
+            f"• {s}",
+            styles["Normal"]
+        )
+    )
+
+elements.append(Spacer(1, 12))
+
+elements.append(
+    Paragraph(
+        "<b>Conclusion</b>",
+        styles["Heading2"]
+    )
+)
+
+conclusion_txt = (
+    f"The institution is currently at {overall_band} stage of "
+    f"institutional excellence ({overall}/5 overall). With focused "
+    f"attention on the domains flagged above and consistent tracking "
+    f"of corrective actions, measurable improvement is achievable "
+    f"within the next assessment cycle."
+)
+
+elements.append(
+    Paragraph(
+        conclusion_txt,
+        styles["Normal"]
+    )
+)
+
+elements.append(Spacer(1, 20))
+
+# ---- Consolidated Findings Register ----
+elements.append(
+    Paragraph(
+        "<b>Consolidated Findings Register</b>",
+        styles["Heading2"]
+    )
+)
+
+elements.append(Spacer(1, 4))
+
+freg_data = [[
+    "Code",
+    "Domain",
+    "Score",
+    "Maturity",
+    "Finding"
+]]
+
+for c in cards:
+    freg_data.append([
+        Paragraph(str(c["code"]), styles["Normal"]),
+        Paragraph(str(c["name"]), styles["Normal"]),
+        Paragraph(
+            str(c["average_score"])
+            if c["average_score"] is not None else "—",
+            styles["Normal"]
+        ),
+        Paragraph(str(c["maturity"]), styles["Normal"]),
+        Paragraph(
+            str(_finding_text(c)),
+            styles["Normal"]
+        )
+    ])
+
+freg_tbl = Table(
+    freg_data,
+    colWidths=[32, 110, 35, 85, 165],
+    repeatRows=1
+)
+
+freg_style = [
+    ("BACKGROUND", (0, 0), (-1, 0), navy),
+    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+    ("FONTSIZE", (0, 0), (-1, -1), 6.5),
+    ("LEADING", (0, 0), (-1, -1), 8),
+    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+    ("TOPPADDING", (0, 0), (-1, -1), 4),
+    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#cccccc")),
+    ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+     [colors.white, colors.HexColor("#f5f6fa")]),
+    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+]
+
+for i, c in enumerate(cards, start=1):
+    freg_style.append(
+        (
+            "BACKGROUND",
+            (3, i),
+            (3, i),
+            maturity_colors.get(
+                c["maturity"],
+                colors.white
+            )
+        )
+    )
+
+freg_tbl.setStyle(TableStyle(freg_style))
+elements.append(freg_tbl)
+elements.append(Spacer(1, 20))
+
+# ---- Recommendations & 90-Day CAPA Plan ----
+elements.append(
+    Paragraph(
+        "<b>Recommendations &amp; 90-Day CAPA Plan</b>",
+        styles["Heading2"]
+    )
+)
+
+elements.append(Spacer(1, 4))
+
+bucket_30, bucket_60, bucket_90 = [], [], []
+
+for a in open_actions:
+    if a.priority == "High":
+        bucket_30.append(a)
+    elif a.priority == "Medium":
+        bucket_60.append(a)
+    else:
+        bucket_90.append(a)
+
+actioned_codes = {
+    a.domain_code
+    for a in open_actions
+}
+
+for c in critical:
+    if c["code"] not in actioned_codes:
+        bucket_30.append(c)
+
+for c in needs_imp:
+    if c["code"] not in actioned_codes:
+        bucket_60.append(c)
+
+def _row_for(item):
+    if hasattr(item, "priority"):
+        return [
+            item.domain_code,
+            item.title,
+            item.priority,
+            item.status
+        ]
+
+    return [
+        item["code"],
+        f"Log corrective action for {item['name']}",
+        "High" if item in critical else "Medium",
+        "Not Started"
+    ]
+
+capa_data = [[
+    "Window",
+    "Domain",
+    "Action / Title",
+    "Priority",
+    "Status"
+]]
+
+for label, bucket in [
+    ("0–30 days", bucket_30),
+    ("31–60 days", bucket_60),
+    ("61–90 days", bucket_90)
+]:
+
+    if not bucket:
+        capa_data.append([
+            Paragraph(str(label), styles["Normal"]),
+            Paragraph("—", styles["Normal"]),
+            Paragraph("No items in this window", styles["Normal"]),
+            Paragraph("—", styles["Normal"]),
+            Paragraph("—", styles["Normal"])
+        ])
+        continue
+
+    for idx, item in enumerate(bucket):
+        row = _row_for(item)
+
+        capa_data.append([
+            Paragraph(
+                str(label if idx == 0 else ""),
+                styles["Normal"]
+            ),
+            Paragraph(str(row[0]), styles["Normal"]),
+            Paragraph(str(row[1]), styles["Normal"]),
+            Paragraph(str(row[2]), styles["Normal"]),
+            Paragraph(str(row[3]), styles["Normal"])
+        ])
+
+capa_tbl = Table(
+    capa_data,
+    colWidths=[60, 35, 210, 55, 67],
+    repeatRows=1
+)
+
+capa_tbl.setStyle(
+    TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), gold),
         ("FONTSIZE", (0, 0), (-1, -1), 7),
+        ("LEADING", (0, 0), (-1, -1), 9),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
         ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#cccccc")),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
-    ]))
-    elements.append(capa_tbl)
+    ])
+)
 
-    # Signature block
-    elements.append(Spacer(1, 40))
-    sig_table = Table(
-        [["_______________________________", ""],
-         ["G. Veerapandian", ""],
-         ["Founder | Institutional Excellence Consultant", ""],
-         ["G.V.R.M. SOLUTIONS, Ramanathapuram", ""],
-         ["Phone: +91 6383858318  |  Email: info.g.v.r.m.solutions.in@gmail.com", ""]],
-        colWidths=[300, 200]
-    )
-    sig_table.setStyle(TableStyle([
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("FONTNAME", (0, 1), (0, 1), "Helvetica-Bold"),
-        ("TOPPADDING", (0, 0), (-1, -1), 1),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-    ]))
-    elements.append(sig_table)
-
-    doc.build(elements)
-    buf.seek(0)
-    filename = f"{org.code}-audit-report.pdf"
-    return StreamingResponse(buf, media_type="application/pdf",
-                              headers={"Content-Disposition": f"attachment; filename={filename}"})
+elements.append(capa_tbl)
