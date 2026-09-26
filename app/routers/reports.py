@@ -268,27 +268,73 @@ tbl.setStyle(TableStyle(tbl_style))
 elements.append(tbl)
 elements.append(Spacer(1, 8))
 
-    legend_data = [[
-        Paragraph(f"<font backColor='#f4a3a3'>&nbsp;&nbsp;&nbsp;</font> Critical/Initial", styles["Normal"]),
-        Paragraph(f"<font backColor='#ffcc99'>&nbsp;&nbsp;&nbsp;</font> Needs Improvement", styles["Normal"]),
-        Paragraph(f"<font backColor='#fff2a8'>&nbsp;&nbsp;&nbsp;</font> Developing", styles["Normal"]),
-        Paragraph(f"<font backColor='#b9e6b9'>&nbsp;&nbsp;&nbsp;</font> Proficient", styles["Normal"]),
-        Paragraph(f"<font backColor='#7fcf7f'>&nbsp;&nbsp;&nbsp;</font> Excellent/Advanced", styles["Normal"]),
-    ]]
-    legend = Table(legend_data, colWidths=[95, 105, 85, 80, 105])
-    legend.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 7), ("TOPPADDING", (0, 0), (-1, -1), 2)]))
-    elements.append(legend)
-    elements.append(Spacer(1, 20))
+legend_data = [[
+    Paragraph(
+        f"<font backColor='#f4a3a3'>&nbsp;&nbsp;&nbsp;</font> Critical/Initial",
+        styles["Normal"]
+    ),
+    Paragraph(
+        f"<font backColor='#ffcc99'>&nbsp;&nbsp;&nbsp;</font> Needs Improvement",
+        styles["Normal"]
+    ),
+    Paragraph(
+        f"<font backColor='#fff2a8'>&nbsp;&nbsp;&nbsp;</font> Developing",
+        styles["Normal"]
+    ),
+    Paragraph(
+        f"<font backColor='#b9e6b9'>&nbsp;&nbsp;&nbsp;</font> Proficient",
+        styles["Normal"]
+    ),
+    Paragraph(
+        f"<font backColor='#7fcf7f'>&nbsp;&nbsp;&nbsp;</font> Excellent/Advanced",
+        styles["Normal"]
+    ),
+]]
 
-    # ---- Graphical presentation: maturity distribution + domain score bar chart ----
-    elements.append(Paragraph("<b>Graphical Presentation</b>", styles["Heading2"]))
-    elements.append(Spacer(1, 6))
+legend = Table(
+    legend_data,
+    colWidths=[95, 105, 85, 80, 105]
+)
 
-    assessed_cards = [c for c in cards if c["average_score"] is not None]
-    dist_order = ["Critical / Initial", "Needs Improvement", "Developing", "Proficient", "Excellent / Advanced", "Not Assessed"]
-    dist_colors = [colors.HexColor("#e57373"), colors.HexColor("#ffb04d"), colors.HexColor("#f0d030"),
-                   colors.HexColor("#6fbf6f"), colors.HexColor("#3d9e3d"), colors.HexColor("#bbbbbb")]
-    dist_counts = [len([c for c in cards if c["maturity"] == m]) for m in dist_order]
+legend.setStyle(TableStyle([
+    ("FONTSIZE", (0, 0), (-1, -1), 7),
+    ("TOPPADDING", (0, 0), (-1, -1), 2)
+]))
+
+elements.append(legend)
+elements.append(Spacer(1, 20))
+
+# ---- Graphical presentation: maturity distribution + domain score bar chart ----
+elements.append(Paragraph("<b>Graphical Presentation</b>", styles["Heading2"]))
+elements.append(Spacer(1, 6))
+
+assessed_cards = [
+    c for c in cards
+    if c["average_score"] is not None
+]
+
+dist_order = [
+    "Critical / Initial",
+    "Needs Improvement",
+    "Developing",
+    "Proficient",
+    "Excellent / Advanced",
+    "Not Assessed"
+]
+
+dist_colors = [
+    colors.HexColor("#e57373"),
+    colors.HexColor("#ffb04d"),
+    colors.HexColor("#f0d030"),
+    colors.HexColor("#6fbf6f"),
+    colors.HexColor("#3d9e3d"),
+    colors.HexColor("#bbbbbb")
+]
+
+dist_counts = [
+    len([c for c in cards if c["maturity"] == m])
+    for m in dist_order
+]
 
     pie_drawing = Drawing(240, 170)
     pie = Pie()
