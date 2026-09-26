@@ -61,25 +61,36 @@ DOMAINS = [
 assert len(DOMAINS) == 52
 
 def run_seed():
-    """Idempotent: safe to call on every app startup. Creates the 52-domain
-    framework and a default admin login only if they don't already exist."""
+    """Idempotent: safe to call on every app startup."""
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
+
     try:
         for code, name, desc in DOMAINS:
+
             d = db.query(Domain).filter_by(code=code).first()
+
             if not d:
-                d = Domain(code=code, name=name, description=desc)
-                db.add(d); db.flush()
+                d = Domain(
+                    code=code,
+                    name=name,
+                    description=desc
+                )
+                db.add(d)
+                db.flush()
+
+            # Create indicators if they do not exist
             if not d.indicators:
-                for n, title in enumerate([
+                indicator_titles = [
                     "Policy / Process Availability",
                     "Implementation Evidence",
                     "Performance Measurement",
                     "Gap Identification",
                     "Corrective / Improvement Action"
-                ], 1):
-                                        db.add(Indicator(
+                ]
+
+                for n, title in enumerate(indicator_titles, 1):
+                    db.add(Indicator(
                         domain_id=d.id,
                         code=f"{code}{n:02d}",
                         title=f"{name} — {title}",
@@ -87,18 +98,16 @@ def run_seed():
                         max_score=100
                     ))
 
-            # Create 5 checklist criteria for each indicator
+                db.flush()
+
+            # Get all indicators for this domain
             indicators = db.query(Indicator).filter(
                 Indicator.domain_id == d.id
             ).all()
 
+            # Create checklist criteria if missing
             for indicator in indicators:
-                existing = db.query(IndicatorCriterion).filter(
-                    IndicatorCriterion.indicator_id == indicator.id
-                ).count()
 
-
-            for indicator in indicators:
                 existing = db.query(IndicatorCriterion).filter(
                     IndicatorCriterion.indicator_id == indicator.id
                 ).count()
@@ -113,18 +122,36 @@ def run_seed():
                     ]
 
                     for criterion_no, criterion_text in enumerate(criteria, 1):
-                        db.add(IndicatorCriterion(
-                            indicator_id=indicator.id,
-                            criterion_no=criterion_no,
-                            criterion_text=criterion_text
-                        ))
+                        already_exists = db.query(IndicatorCriterion).filter(
+                            IndicatorCriterion.indicator_id == indicator.id,
+                            IndicatorCriterion.criterion_no == criterion_no
+                        ).first()
 
-        org = db.query(Organization).filter_by(code="GVRM-DEMO").first()
+                        if not already_exists:
+                            db.add(IndicatorCriterion(
+                                indicator_id=indicator.id,
+                                criterion_no=criterion_no,
+                                criterion_text=criterion_text
+                            ))
+
+        # Demo organization
+        org = db.query(Organization).filter_by(
+            code="GVRM-DEMO"
+        ).first()
+
         if not org:
-            org = Organization(name="GVRM Demo Institution", code="GVRM-DEMO")
-            db.add(org); db.flush()
+            org = Organization(
+                name="GVRM Demo Institution",
+                code="GVRM-DEMO"
+            )
+            db.add(org)
+            db.flush()
 
-        u = db.query(User).filter_by(email="admin@gvrmsolutions.in").first()
+        # Default admin
+        u = db.query(User).filter_by(
+            email="admin@gvrmsolutions.in"
+        ).first()
+
         if not u:
             db.add(User(
                 organization_id=org.id,
@@ -133,6 +160,8 @@ def run_seed():
                 password_hash=hash_password("ChangeMe@123"),
                 role="admin"
             ))
+
         db.commit()
+
     finally:
         db.close()
