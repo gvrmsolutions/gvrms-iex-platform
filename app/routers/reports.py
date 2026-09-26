@@ -168,7 +168,7 @@ header.setStyle(TableStyle([
     ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
 ]))
 
-    elements.append(header)
+elements.append(header)
 else:
         elements.append(Paragraph(f"<font color='#07152d'><b>{org.name}</b></font>", styles["Title"]))
 
