@@ -141,10 +141,9 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     navy = colors.HexColor("#07152d")
     gold = colors.HexColor("#c9a24b")
 
-    elements = []
+        elements = []
 
-        logo_path = Path(__file__).resolve().parent.parent / "static" / "assets" / "gvrm_logo.png"
-
+    logo_path = Path(__file__).resolve().parent.parent / "static" / "assets" / "gvrm_logo.png"
     if logo_path.exists():
         header = Table(
             [[
@@ -219,73 +218,79 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
 
     scored = [c for c in cards if c["average_score"] is not None]
     overall = round(sum(c["average_score"] for c in scored) / len(scored), 1) if scored else 0
-    elements.append(Paragraph(f"<b>Overall institutional score: {overall} / 100</b>", styles["Heading2"]))
+        elements.append(
+        Paragraph(
+            f"<b>Overall institutional score: {overall} / 5</b>",
+            styles["Heading2"]
+        )
+    )
     elements.append(Paragraph(f"Domains assessed: {len(scored)} of {len(cards)} &nbsp;&nbsp; Open corrective actions: {len(open_actions)}", styles["Normal"]))
     elements.append(Spacer(1, 14))
 
-    data = [["Code", "Domain", "Avg Score", "Maturity", "Assessed / Total"]]
+        data = [["Code", "Domain", "Avg Score", "Maturity", "Assessed / Total"]]
+
     for c in cards:
         data.append([
-    Paragraph(str(c["code"]), styles["Normal"]),
-    Paragraph(str(c["name"]), styles["Normal"]),
-    Paragraph(
-        str(c["average_score"])
-        if c["average_score"] is not None else "—",
-        styles["Normal"]
-    ),
-    Paragraph(str(c["maturity"]), styles["Normal"]),
-    Paragraph(
-        f"{c['assessed']}/{c['total_indicators']}",
-        styles["Normal"]
-    )
-])
+            Paragraph(str(c["code"]), styles["Normal"]),
+            Paragraph(str(c["name"]), styles["Normal"]),
+            Paragraph(
+                str(c["average_score"])
+                if c["average_score"] is not None else "—",
+                styles["Normal"]
+            ),
+            Paragraph(str(c["maturity"]), styles["Normal"]),
+            Paragraph(
+                f"{c['assessed']}/{c['total_indicators']}",
+                styles["Normal"]
+            )
+        ])
 
-    maturity_colors = {
+        maturity_colors = {
         "Critical / Initial": colors.HexColor("#f4a3a3"),
         "Needs Improvement": colors.HexColor("#ffcc99"),
         "Developing": colors.HexColor("#fff2a8"),
         "Proficient": colors.HexColor("#b9e6b9"),
         "Excellent / Advanced": colors.HexColor("#7fcf7f"),
-        "Not Assessed": colors.HexColor("#dddddd"),
     }
 
-    tbl = Table(
-    data,
-    colWidths=[35, 190, 55, 95, 110],
-    repeatRows=1,
-    hAlign="LEFT"
-)
+        tbl = Table(
+        data,
+        colWidths=[35, 190, 55, 95, 110],
+        repeatRows=1,
+        hAlign="LEFT"
+    )
+        tbl_style = [
+        ("BACKGROUND", (0, 0), (-1, 0), navy),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("LEADING", (0, 0), (-1, -1), 10),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+         [colors.white, colors.HexColor("#f5f6fa")]),
+    ]
 
-tbl_style = [
-    ("BACKGROUND", (0, 0), (-1, 0), navy),
-    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+    for i, c in enumerate(cards, start=1):
+        cell_color = maturity_colors.get(
+            c["maturity"],
+            colors.white
+        )
 
-    # Better text spacing
-    ("FONTSIZE", (0, 0), (-1, -1), 8),
-    ("LEADING", (0, 0), (-1, -1), 10),
+        tbl_style.append(
+            ("BACKGROUND", (3, i), (3, i), cell_color)
+        )
 
-    # Cell padding
-    ("LEFTPADDING", (0, 0), (-1, -1), 6),
-    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-    ("TOPPADDING", (0, 0), (-1, -1), 6),
-    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        tbl_style.append(
+            ("FONTNAME", (3, i), (3, i), "Helvetica-Bold")
+        )
 
-    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-
-    ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cccccc")),
-
-    ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-     [colors.white, colors.HexColor("#f5f6fa")]),
-]
-
-for i, c in enumerate(cards, start=1):
-    cell_color = maturity_colors.get(c["maturity"], colors.white)
-    tbl_style.append(("BACKGROUND", (3, i), (3, i), cell_color))
-    tbl_style.append(("FONTNAME", (3, i), (3, i), "Helvetica-Bold"))
-
-tbl.setStyle(TableStyle(tbl_style))
-elements.append(tbl)
-elements.append(Spacer(1, 8))
+    tbl.setStyle(TableStyle(tbl_style))
+    elements.append(tbl)
+    elements.append(Spacer(1, 8))
 
 legend_data = [[
     Paragraph(
@@ -324,7 +329,12 @@ elements.append(legend)
 elements.append(Spacer(1, 20))
 
 # ---- Graphical presentation: maturity distribution + domain score bar chart ----
-elements.append(Paragraph("<b>Graphical Presentation</b>", styles["Heading2"]))
+elements.append(
+        Paragraph(
+            f"<b>Overall institutional score: {overall} / 5</b>",
+            styles["Heading2"]
+        )
+    )
 elements.append(Spacer(1, 6))
 
 assessed_cards = [
