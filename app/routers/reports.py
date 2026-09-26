@@ -350,7 +350,7 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     summary_txt = (
         f"Out of the 52-domain institutional excellence framework, {len(assessed_cards)} domain(s) have been "
         f"assessed so far and {len(not_assessed)} remain pending. The overall institutional score stands at "
-        f"{overall}/100, placing the institution at {overall_band} stage of readiness. "
+        f"{overall}/5, placing the institution at {overall_band} stage of readiness. "
         f"{len(critical)} domain(s) fall in the Critical/Initial band, {len(needs_imp)} need improvement, and "
         f"{len(strong)} are already at a Proficient or Excellent level. There are currently {len(open_actions)} "
         f"open corrective action(s) being tracked."
