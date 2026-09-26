@@ -38,13 +38,13 @@ def compute_auto_score(criteria_met: int, observation: str, evidence_count: int)
         return 5
 
 def maturity(score: int) -> str:
-    if score < 40:
+    if score <= 1:
         return "Critical / Initial"
-    if score < 60:
+    if score == 2:
         return "Needs Improvement"
-    if score < 75:
+    if score == 3:
         return "Developing"
-    if score < 90:
+    if score == 4:
         return "Proficient"
     return "Excellent / Advanced"
 
