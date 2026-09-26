@@ -260,7 +260,7 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
     data = [
         ["Code", "Domain", "Avg Score", "Maturity", "Assessed / Total"]
     ]
-        for c in cards:
+    for c in cards:
         data.append([
             Paragraph(
                 str(c["code"]),
