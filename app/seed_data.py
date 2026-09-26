@@ -103,7 +103,7 @@ def run_seed():
                     IndicatorCriterion.indicator_id == indicator.id
                 ).count()
 
-                if existing == 0:
+                if existing < 5:
                     criteria = [
                         f"{name} requirement is formally documented",
                         f"{name} process is clearly defined and communicated",
