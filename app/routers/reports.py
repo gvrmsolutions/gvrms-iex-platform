@@ -199,7 +199,7 @@ def audit_report_pdf(db: Session = Depends(get_db), user=Depends(current_user)):
             styles["Normal"]
         )
     )
-        detail_lines = []
+    detail_lines = []
 
     if org.address:
         detail_lines.append(org.address)
